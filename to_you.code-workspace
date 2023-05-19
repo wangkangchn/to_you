@@ -51,7 +51,18 @@
 			"cinttypes": "cpp",
 			"typeinfo": "cpp",
 			"bit": "cpp",
-			"pthread_alloc": "cpp"
+			"pthread_alloc": "cpp",
+			"complex": "cpp",
+			"list": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"chrono": "cpp",
+			"condition_variable": "cpp",
+			"map": "cpp",
+			"ratio": "cpp",
+			"set": "cpp",
+			"mutex": "cpp",
+			"thread": "cpp"
 		}
 	}
 }
