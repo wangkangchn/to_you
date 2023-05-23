@@ -402,6 +402,259 @@ inline void advance(InputIterator& iter, Distance n)
     return __advance(iter, n, iterator_category(iter));
 }
 
+
+
+/* -------------------------------------------------------------------------------
+ * 具体使用的迭代器
+ * ------------------------------------------------------------------------------- */
+template <typename Container>
+class back_insert_iterator
+{
+protected:
+    Container* container;           /* 迭代器应用的容器 */
+
+public:
+    typedef output_iterator_tag iterator_category;  /* 输出, 唯写, 输出到容器 */
+    typedef void                value_type;
+    typedef void                difference_type;
+    typedef void                pointer;
+    typedef void                reference;
+
+    explicit back_insert_iterator(Container& x) :
+        container(&x)
+    {}
+    
+    /* 迭代器就是一个广义指针, 所以可以直接将值保存到其中 */
+    back_insert_iterator&
+    operator=(const typename Container::value_type& value) 
+    {
+        container->push_back(value);
+        return *this;
+    }
+
+    back_insert_iterator<Container>& operator*() { return *this; }
+    back_insert_iterator<Container>& operator++() { return *this; }     /* 前++ */
+    back_insert_iterator<Container>& operator++(int) { return *this; }  /* 后++ */
+};
+
+/* 偏特化, 获取迭代器类型, 可能更快 */
+template <typename Container>
+output_iterator_tag
+iterator_category(const back_insert_iterator<Container>&)
+{
+    return output_iterator_tag();
+}
+
+/* 为指定的容器构造一个尾插迭代器 */
+template <typename Container>
+back_insert_iterator<Container> back_inserter(Container& container)
+{
+    return back_insert_iterator<Container>(container);
+}
+
+
+/* 头插迭代器 */
+template <typename Container>
+class front_insert_iterator
+{
+protected:
+    Container* container;           /* 迭代器应用的容器 */
+
+public:
+    typedef output_iterator_tag iterator_category;  /* 输出, 唯写, 输出到容器 */
+    typedef void                value_type;
+    typedef void                difference_type;
+    typedef void                pointer;
+    typedef void                reference;
+
+    explicit front_insert_iterator(Container& x) :
+        container(&x)
+    {}
+    
+    /* 迭代器就是一个广义指针, 所以可以直接将值保存到其中 */
+    front_insert_iterator&
+    operator=(const typename Container::value_type& value) 
+    {
+        container->push_front(value);               /* 模板更像是一种规范, 只有满足
+                                                    这种规范才可以使用 */
+        return *this;
+    }
+
+    front_insert_iterator<Container>& operator*() { return *this; }
+    front_insert_iterator<Container>& operator++() { return *this; }     /* 前++ */
+    front_insert_iterator<Container>& operator++(int) { return *this; }  /* 后++ */
+};
+
+/* 偏特化, 获取迭代器类型, 可能更快 */
+template <typename Container>
+output_iterator_tag
+iterator_category(const front_insert_iterator<Container>&)
+{
+    return output_iterator_tag();
+}
+
+/* 为指定的容器构造一个尾插迭代器 */
+template <typename Container>
+front_insert_iterator<Container> front_inserter(Container& container)
+{
+    return front_insert_iterator<Container>(container);
+}
+
+
+/* 插入迭代器 */
+template <typename Container>
+class insert_iterator
+{
+protected:
+    Container* container;               /* 迭代器应用的容器 */
+    typename Container::iterator iter;  /* 具体的迭代器应由容器来指定 */
+
+public:
+    typedef output_iterator_tag iterator_category;  /* 输出, 唯写, 输出到容器 */
+    typedef void                value_type;
+    typedef void                difference_type;
+    typedef void                pointer;
+    typedef void                reference;
+
+    explicit insert_iterator(Container& x, typename Container::iterator& iter) :
+        container(&x), iter(iter)
+    {}
+    
+    /* 迭代器就是一个广义指针, 所以可以直接将值保存到其中 */
+    insert_iterator&
+    operator=(const typename Container::value_type& value) 
+    {
+        iter = container->insert(iter, value);          /* 在迭代器指定的位置上插入新值 */
+        ++iter;
+        return *this;
+    }
+
+    insert_iterator<Container>& operator*() { return *this; }
+    insert_iterator<Container>& operator++() { return *this; }     /* 前++ */
+    insert_iterator<Container>& operator++(int) { return *this; }  /* 后++ */
+};
+
+/* 偏特化, 获取迭代器类型, 可能更快 */
+template <typename Container>
+output_iterator_tag
+iterator_category(const insert_iterator<Container>&)
+{
+    return output_iterator_tag();
+}
+
+/* 为指定的容器构造一个尾插迭代器 */
+template <typename Container, typename Iterator>
+insert_iterator<Container> inserter(Container& container, Iterator iter)
+{   
+    /* 运行迭代器强转 */
+    return inserter<Container>(container, typename Container::iterator(iter));
+}
+
+
+/* 反向迭代器 */
+template <typename BidirectionalIterator, typename T,
+            typename Reference=T&,
+            typename Distance=ptrdiff_t>
+class reverse_bidirectional_iterator
+{
+    typedef reverse_bidirectional_iterator<BidirectionalIterator, T, Reference, Distance> self;
+
+protected:
+    BidirectionalIterator current;  /* 传入的参数和这个类是什么关系, 
+                                    又封装一层, 将所有同类操作封装在一起 */
+
+public:
+    typedef bidirectional_iterator_tag  iterator_category;  /* 输出, 唯写, 输出到容器 */
+    typedef T                           value_type;
+    typedef Distance                    difference_type;
+    typedef T*                          pointer;
+    typedef T&                          reference;
+
+    reverse_bidirectional_iterator() = default;
+    explicit reverse_bidirectional_iterator(BidirectionalIterator iter) :
+        current(iter)
+    {}
+
+    BidirectionalIterator base() const { return current; }
+
+    Reference operator*() const 
+    { 
+        /* 因为这个是反向迭代器, 所以 current 指出的是容器最后一个元素的下一个位置,
+        所以解引的时候必须向前移动, 才能得到值 */
+        BidirectionalIterator tmp = current;
+        return *--tmp; 
+    }
+
+    pointer operator->() const
+    {
+        return &(operator*());  /* 因为返回的是引用, 所以这里可以取址 */
+    }
+
+    self& operator++()
+    {
+        --current;              /* 因为是反向迭代器, 所以 ++ 的使用, 应该向前走 */
+        return *this;
+    }
+
+    self operator++(int)
+    {
+        self tmp = *this;
+        --current;
+        return tmp;         /* 后++, 在操作的同时, 返回旧值 */
+    }
+
+    self& operator--()
+    {
+        ++current;
+        return *this;
+    }
+
+    self operator--(int)
+    {
+        self tmp = *this;
+        ++current;
+        return tmp;         /* 后++, 在操作的同时, 返回旧值 */
+    }
+};
+
+template <class BidirectionalIterator, class T, class Reference, 
+          class Distance>
+bidirectional_iterator_tag
+iterator_category(const reverse_bidirectional_iterator<BidirectionalIterator, T,
+                            Reference, Distance>&)
+{
+    return bidirectional_iterator_tag();
+}
+
+template <class BidirectionalIterator, class T, class Reference, 
+          class Distance>
+T*
+value_type(const reverse_bidirectional_iterator<BidirectionalIterator, T,
+                            Reference, Distance>&)
+{
+    return (T*)(0);
+}
+
+template <class BidirectionalIterator, class T, class Reference, 
+          class Distance>
+Distance*
+distance_type(const reverse_bidirectional_iterator<BidirectionalIterator, T,
+                            Reference, Distance>&)
+{
+    return (Distance*)(0);
+}
+
+/* 判断两个迭代器指针是不是一样 */
+template <class BidirectionalIterator, class T, class Reference, 
+          class Distance>
+bool operator==(const reverse_bidirectional_iterator<BidirectionalIterator, T,
+                            Reference, Distance>& lhs,
+                const reverse_bidirectional_iterator<BidirectionalIterator, T,
+                            Reference, Distance>& rhs)
+{
+    return lhs.base() == rhs.base();
+}
+
 __WKANGK_STL_END_NAMESPACE
 
 #endif	/* !__WKANGK_STL_ITERATOR_H__ */

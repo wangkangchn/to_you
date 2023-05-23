@@ -15,4 +15,7 @@ Copyright © wkangk <wangkangchn@163.com>
 
 #define __USEING_WKANGK_STL_NAMESPACE   using namespace wkangk_stl;
 
+/* 显示具体化 */
+#define __STL_TEMPLATE_NULL template<>
+
 #endif	/* !__WKANGK_STL_CONFIG_H__ */

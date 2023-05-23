@@ -10,6 +10,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include <typeinfo> 
 
 #include "iterator.h"
+#include "type_traits.h"
 
 __USEING_WKANGK_STL_NAMESPACE
 
@@ -28,5 +29,10 @@ int main()
     int* b = a;
     advance(a, 23321);
     std::cout << distance(a, b) << std::endl;
+
+    std::cout << typeid(__type_traits<int>::is_POD_type).name() << std::endl;
+    std::cout << typeid(__type_traits<int*>::is_POD_type).name() << std::endl;
+    std::cout << typeid(__type_traits<const int*>::is_POD_type).name() << std::endl;
+
     return 0;
 };
