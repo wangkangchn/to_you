@@ -14,10 +14,11 @@ class A
 {
 public:
     A() = default;
-    A(int a) : a_(a) {}
-
+    // A(int a) : a_(a) {}
+    ~A() {};
+    
 private:
-    std::shared_ptr<int> b_;
+    // std::shared_ptr<int> b_;
     int a_;
 };
 

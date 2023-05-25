@@ -2,6 +2,10 @@
 <img src="material/qrcode_.jpg"> 
 
 ---
+20230525 提交说明:  
+1. 添加 alloc.h 第一级内存管理器
+
+---
 20230523 提交说明:  
 1. 添加 type_traits 简单实现  
 
