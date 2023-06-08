@@ -6,9 +6,14 @@ Copyright © wkangk <wangkangchn@163.com>
 描述	   	: 两级内存分配器
 时间	   	: 2023-05-25 20:24
 ***************************************************************/
+#ifndef __WKANGK_STL_ALLOC_H__ 
+#define __WKANGK_STL_ALLOC_H__ 
+
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
+
 
 __WKANGK_STL_BEGIN_NAMESPACE
 
@@ -41,7 +46,7 @@ public:
     {
         void* result = realloc(p, new_sz);
         if (!result) {
-            result = oom_malloc(p, new_sz);         /* 内存不足时, 重新分配 */
+            result = oom_realloc(p, new_sz);         /* 内存不足时, 重新分配 */
         }
         return result;
     }
@@ -65,7 +70,7 @@ private:
                 __THROW_BAD_ALLOC;
             }
             (*my_malloc_handler)();     /* 内存不足时的回调函数 */
-            result = malloc(n)
+            result = malloc(n);
             if (result) {
                 return result;
             }
@@ -83,7 +88,7 @@ private:
                 __THROW_BAD_ALLOC;
             }
             (*my_malloc_handler)();     /* 内存不足时的回调函数 */
-            result = realloc(p, new_sz)
+            result = realloc(p, new_sz);
             if (result) {
                 return result;
             }
@@ -116,12 +121,12 @@ public:
         return (T*)Alloc::allocate(sizeof(T));
     }
 
-    static void reallocate(T* p, size_t n)
+    static void deallocate(T* p, size_t n)
     {
         Alloc::deallocate(p, n * sizeof(T));
     }
 
-    static void reallocate(T* p)
+    static void deallocate(T* p)
     {
         Alloc::deallocate(p, sizeof(T));
     }
@@ -155,7 +160,7 @@ public:
         if (*needed_free_list) {    
             obj* result = *needed_free_list;
             /* 头结点下移, 因为这里是二级指针, 所以直接解引赋值, 修改的就直接是表头 */
-            *needed_free_list = *result->free_list_link;
+            *needed_free_list = result->free_list_link;
             return (void*)result;
         }
 
@@ -188,11 +193,11 @@ public:
         }
 
         /* 使用自身的分配器分配所需内存 */
-        void* result = allocate(p, new_sz);
+        void* result = allocate(new_sz);
         /* 旧数据拷贝到新数据 */
         size_t copy_sz = old_sz <= new_sz ? old_sz : new_sz;
         memcpy(result, p, copy_sz);
-        deallocate(p);  /* 释放旧地址 */
+        deallocate(p, old_sz);  /* 释放旧地址 */
         return result;
     }
 
@@ -240,7 +245,7 @@ char* __default_alloc_template<inst>::end_free = nullptr;
 
 /* 静态数组的初始化, 确实很新奇 */
 template <int inst>
-__default_alloc_template<inst>::obj* 
+typename __default_alloc_template<inst>::obj* 
 __default_alloc_template<inst>::free_list[__NFREELISTS] = { nullptr };
 
 template <int inst>
@@ -268,8 +273,8 @@ void* __default_alloc_template<inst>::refill(size_t bytes)
         指针变量一个就是 8B, 如果申请的内存小于 8B, 如果将这个地址转
         成 obj*, 如果一旦解引, 会找到 8 个地址空间的大小, 很显然就越界了
         了不起的设计   */
+        *needed_free_list = (obj*)(chunk + bytes * 1);
         obj* current_obj = *needed_free_list;                           /* 这里 current_obj 应该是 nullptr */
-        *current_obj = (obj*)(chunk + bytes * 1);
         for (size_t i = 2; i < nobjs; ++i) {
             current_obj->free_list_link = (obj*)(chunk + bytes * i);    /* 0 被直接返回了 */
             current_obj = current_obj->free_list_link;
@@ -339,4 +344,11 @@ char* __default_alloc_template<inst>::chunk_alloc(size_t bytes, int& nobjs)
     return chunk_alloc(bytes, nobjs);       /* 取得新内存后, 重新调整 nobjs 的个数 */    
 }
 
+
+typedef __default_alloc_template<0> alloc; 
+typedef __default_alloc_template<0> single_client_alloc; 
+
 __WKANGK_STL_END_NAMESPACE
+
+#endif	/* !__WKANGK_STL_ALLOC_H__ */
+

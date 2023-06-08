@@ -8,11 +8,17 @@ Copyright © wkangk <wangkangchn@163.com>
 ***************************************************************/
 #include <iostream>
 #include <typeinfo> 
+#include <chrono> 
+#include <thread> 
 
 #include "iterator.h"
 #include "type_traits.h"
+#include "alloc.h"
+#include "vector.h"
+
 
 __USEING_WKANGK_STL_NAMESPACE
+
 
 int main()
 {
@@ -34,5 +40,23 @@ int main()
     std::cout << typeid(__type_traits<int*>::is_POD_type).name() << std::endl;
     std::cout << typeid(__type_traits<const int*>::is_POD_type).name() << std::endl;
 
+    single_client_alloc my_alloc;
+
+    // for (size_t i = 0; i < 1000000000; ++i) {
+
+    //     size_t bytes = 1 << 30;
+    //     void* p = my_alloc.allocate(bytes);
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(10000000));
+    //     my_alloc.deallocate(p, bytes);
+    // }
+
+    vector<int> vec;
+    for (int i = 0; i < 9; ++i) {
+        vec.push_back(i);
+    }
+
+    for (auto v : vec) {
+        std::cout << v << std::endl;
+    }
     return 0;
 };

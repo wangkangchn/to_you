@@ -6,6 +6,9 @@ Copyright © wkangk <wangkangchn@163.com>
 描述	   	: 类型萃取器
 时间	   	: 2023-05-23 20:30
 ***************************************************************/
+#ifndef __WKANGK_STL_TYPE_TRAITS_H__ 
+#define __WKANGK_STL_TYPE_TRAITS_H__ 
+
 #include "config.h"
 
 __WKANGK_STL_BEGIN_NAMESPACE
@@ -195,3 +198,5 @@ struct __type_traits<T*>
 
 
 __WKANGK_STL_END_NAMESPACE
+
+#endif	/* !__WKANGK_STL_TYPE_TRAITS_H__ */

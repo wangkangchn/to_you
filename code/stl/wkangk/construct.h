@@ -32,25 +32,12 @@ inline void construct(Class* cla, const T& value)
 
 /* 最泛化的析构, 调用对象的析构 */
 template <typename T>
-inline void destory(T* pointer)
+inline void destroy(T* pointer)
 {
     pointer->~T();
 }
 
 
-/* 析构一个范围内的对象 */
-template <typename ForwardIterator>
-inline void destory(ForwardIterator first, ForwardIterator last)
-{
-    __destory(first, last, value_type(last));
-}
-
-template <typename ForwardIterator, typename T>
-inline void __destory(ForwardIterator first, ForwardIterator last, T*)
-{   
-    typedef typename __type_traits<T>::has_trivial_destructor has_trivial_destructor;
-    __destory_aux(first, last, has_trivial_destructor());
-}
 
 /* 针对 POD 类型, 可以使用更简单的析构方式: 什么都不做, 只需释放内存 */
 template <typename ForwardIterator>
@@ -61,10 +48,24 @@ inline void __destory_aux(ForwardIterator first, ForwardIterator last, __true_ty
 template <typename ForwardIterator>
 inline void __destory_aux(ForwardIterator first, ForwardIterator last, __false_type)
 {
-    typedef typename iterator_traits<first>::value_type value_type;
+    typedef typename iterator_traits<ForwardIterator>::value_type value_type;
     for (auto it = first; it != last; ++it) {
-        destory(&(*it));    /* 调用全局的析构 */
+        destroy(&(*it));    /* 调用全局的析构 */
     }
+}
+
+template <typename ForwardIterator, typename T>
+inline void __destory(ForwardIterator first, ForwardIterator last, T*)
+{   
+    typedef typename __type_traits<T>::has_trivial_destructor has_trivial_destructor;
+    __destory_aux(first, last, has_trivial_destructor());
+}
+
+/* 析构一个范围内的对象 */
+template <typename ForwardIterator>
+inline void destroy(ForwardIterator first, ForwardIterator last)
+{
+    __destory(first, last, value_type(last));
 }
 
 /* 为什么要有这两个特化??? */
