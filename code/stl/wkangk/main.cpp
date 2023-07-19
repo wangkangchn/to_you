@@ -15,6 +15,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "type_traits.h"
 #include "alloc.h"
 #include "vector.h"
+#include "list.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -50,13 +51,28 @@ int main()
     //     my_alloc.deallocate(p, bytes);
     // }
 
+    std::cout << "vector\n";
     vector<int> vec;
     for (int i = 0; i < 9; ++i) {
         vec.push_back(i);
     }
 
     for (auto v : vec) {
-        std::cout << v << std::endl;
+        std::cout << v << " ";
     }
+    std::cout << std::endl;
+
+
+    std::cout << "list\n";
+    list<int> my_list;
+    for (int i = 9; i < 19; ++i) {
+        my_list.push_back(i);
+    }
+
+    for (auto v : my_list) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
     return 0;
 };
