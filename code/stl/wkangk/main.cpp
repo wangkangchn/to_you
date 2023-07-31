@@ -16,6 +16,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "alloc.h"
 #include "vector.h"
 #include "list.h"
+#include "deque.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -70,6 +71,19 @@ int main()
     }
 
     for (auto v : my_list) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+
+    std::cout << (int)(unsigned char)(-1) << std::endl;
+
+    std::cout << "\n\ndeque\n";
+    deque<int> mydeque;
+    for (int i = 19; i < 39; ++i) {
+        mydeque.push_back(i);
+    }
+    for (auto v : mydeque) {
         std::cout << v << " ";
     }
     std::cout << std::endl;
