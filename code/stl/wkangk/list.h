@@ -118,6 +118,7 @@ public:
     typedef __list_iterator<T, T&, T*> iterator;
     typedef T                   value_type;
     typedef value_type&         reference;
+    typedef const value_type&         const_reference;
     typedef size_t  size_type;
 
     list()
@@ -143,7 +144,7 @@ public:
         return node_;
     }
 
-    bool empty()
+    bool empty() const
     {
         return node_->next_ == node_;
     }
@@ -195,7 +196,21 @@ public:
         node_->prev_ = node_;
     }
 
-    
+    void pop_back() 
+    { 
+        iterator tmp = end();
+        erase(--tmp);
+    }
+
+    iterator erase(iterator position) 
+    {
+        link_type next_node = link_type(position.node_->next_);
+        link_type prev_node = link_type(position.node_->prev_);
+        prev_node->next_ = next_node;
+        next_node->prev_ = prev_node;
+        destroy_node(position.node_);
+        return iterator(next_node);
+    }
 
 
 private:
@@ -239,6 +254,14 @@ private:
         node_ = get_node();             /* 空节点是尾节点的下一个节点 */
         node_->next_ = node_;
         node_->prev_ = node_;
+    }
+
+    iterator erase(iterator first, iterator last) 
+    {
+        while (first != last) {
+            erase(first++);
+        }
+        return last;
     }
 
 private:

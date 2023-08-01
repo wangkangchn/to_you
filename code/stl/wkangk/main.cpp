@@ -17,10 +17,21 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "vector.h"
 #include "list.h"
 #include "deque.h"
+#include "stack.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
 
+
+template <typename Container>
+void show(const Container& container)
+{
+    
+    for (auto& v : container) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+}
 
 int main()
 {
@@ -88,5 +99,39 @@ int main()
     }
     std::cout << std::endl;
 
+    mydeque.pop_back();
+    mydeque.pop_back();
+    mydeque.pop_back();
+    mydeque.pop_back();
+    mydeque.pop_back();
+    for (auto v : mydeque) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+    /* -------------------------------------------------------------------------------
+     * stack
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nstack<deque>\n";
+    stack<int> my_stack;
+    for (int i = 190; i < 209; ++i) {
+        my_stack.push(i);
+    } 
+    while (!my_stack.empty()) {
+        std::cout << my_stack.top() << " ";
+        my_stack.pop();
+    } 
+    std::cout << std::endl;
+
+    std::cout << "\n\nstack<list>\n";
+    stack<int, list<int>> my_stack_list;
+    for (int i = 190; i < 209; ++i) {
+        my_stack_list.push(i);
+    } 
+    while (!my_stack_list.empty()) {
+        std::cout << my_stack_list.top() << " ";
+        my_stack_list.pop();
+    } 
+    std::cout << std::endl;
     return 0;
 };

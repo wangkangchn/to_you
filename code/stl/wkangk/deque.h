@@ -214,6 +214,7 @@ public:
     typedef T               value_type;
     typedef value_type*     pointer;
     typedef value_type&     reference;
+    typedef const value_type&     const_reference;
     typedef pointer*        map_pointer;
     typedef size_t          size_type;
     typedef ptrdiff_t       difference_type;
@@ -272,7 +273,10 @@ public:
 
         /* 不对不对 不能上面这么写, 上面只定义了 两个 iterator 之间的 -, 而没有定义 iterator 与 整数之间的减,
         但不是有 -=, -= 也不行??? 基础不牢! 我记得有一个匹配顺序, 但是记不清楚了 */
-        return *(finish_ - 1);
+        // return *(finish_ - 1);   /* 不可不可, 出错, 不行 -= 不行, 必须完全匹配 */
+        iterator tmp = finish_;
+        --tmp;
+        return *tmp;
     }
 
     size_type size()
@@ -290,6 +294,7 @@ public:
         return finish_ == start_;
     }
 
+    /* 尾插 */
     void push_back(const value_type& v)
     {
         if (finish_.cur_ != finish_.last_ - 1) { /* 还有空间, 就存入元素 */
@@ -298,6 +303,19 @@ public:
         } else {
             /* 没有空间了就要重新分配 */
             push_back_auc(v);
+        }
+    }
+
+    /* 尾删 */
+    void pop_back()
+    {
+        if (finish_.cur_ != finish_.first_) {
+            /* 当前段内还有一些元素, 直接删除即可 */
+            --finish_.cur_;
+            destroy(finish_.cur_);  /* 左闭右开 */
+        } else {
+            /* 当前正好是当前段的边界上, 这样就需要把当前段排除在外, 需要删掉? 我感觉没啥必要吧 */
+            pop_back_aux();
         }
     }
 
@@ -440,6 +458,15 @@ private:
     void deallocate_node(pointer n) 
     {
         data_allocator::deallocate(n, buffer_size());
+    }
+
+    void pop_back_aux()
+    {   
+        /* 没必要删掉吧, 直接调整指针不行吗? */
+        deallocate_node(finish_.first_);
+        finish_.set_node(finish_.node_ - 1);
+        finish_.cur_ = finish_.last_ - 1;
+        destroy(finish_.cur_);      /* 左闭右开 */
     }
 
 private:
