@@ -18,6 +18,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "list.h"
 #include "deque.h"
 #include "stack.h"
+#include "queue.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -131,6 +132,32 @@ int main()
     while (!my_stack_list.empty()) {
         std::cout << my_stack_list.top() << " ";
         my_stack_list.pop();
+    } 
+    std::cout << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * queue
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\nqueue<deque>\n";
+    queue<int> my_queue;
+    for (int i = 290; i < 309; ++i) {
+        my_queue.push(i);
+    } 
+    while (!my_queue.empty()) {
+        std::cout << my_queue.front() << " ";
+        my_queue.pop();
+    } 
+    std::cout << std::endl;
+
+    std::cout << "\n\nqueue<list>\n";
+    queue<int, list<int>> my_queue_list;
+    for (int i = 290; i < 309; ++i) {
+        my_queue_list.push(i);
+    } 
+    while (!my_queue_list.empty()) {
+        std::cout << my_queue_list.front() << " ";
+        my_queue_list.pop();
     } 
     std::cout << std::endl;
     return 0;

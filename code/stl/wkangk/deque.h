@@ -319,6 +319,17 @@ public:
         }
     }
 
+    /* 头删 */
+    void pop_front()
+    {
+        if (start_.cur_ != start_.last_ - 1) {
+            destroy(start_.cur_);
+            ++start_.cur_;
+        } else {
+            pop_front_aux();
+        }
+    }
+
 private:
     static size_type buffer_size() 
     {
@@ -467,6 +478,14 @@ private:
         finish_.set_node(finish_.node_ - 1);
         finish_.cur_ = finish_.last_ - 1;
         destroy(finish_.cur_);      /* 左闭右开 */
+    }
+
+    void pop_front_aux()
+    {
+        destroy(start_.cur_);
+        deallocate_node(start_.first_);
+        start_.set_node(start_.node_ + 1);
+        start_.cur_ = start_.first_;
     }
 
 private:

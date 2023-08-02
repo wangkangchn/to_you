@@ -201,6 +201,10 @@ public:
         iterator tmp = end();
         erase(--tmp);
     }
+    void pop_front() 
+    { 
+        erase(begin()); 
+    }
 
     iterator erase(iterator position) 
     {
