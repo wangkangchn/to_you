@@ -19,6 +19,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "deque.h"
 #include "stack.h"
 #include "queue.h"
+#include "heap.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -160,5 +161,47 @@ int main()
         my_queue_list.pop();
     } 
     std::cout << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * heap
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nheap vector<int>\n";
+
+    vector<int> my_heap;   /* 50 是最后加上的 */
+    my_heap.push_back(0);
+    my_heap.push_back(1);
+    my_heap.push_back(2);
+    my_heap.push_back(3);
+    my_heap.push_back(4);
+    my_heap.push_back(8);
+    my_heap.push_back(9);
+    my_heap.push_back(3);
+    my_heap.push_back(5);
+
+    make_heap(my_heap.begin(), my_heap.end());
+    for (auto v: my_heap) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+    
+    my_heap.push_back(7);
+    push_heap(my_heap.begin(), my_heap.end());
+    for (auto v: my_heap) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+    pop_heap(my_heap.begin(), my_heap.end());
+    std::cout << my_heap.back() << std::endl;
+    my_heap.pop_back();
+
+    /* 68 50 65 31 24 32 */
+    sort_heap(my_heap.begin(), my_heap.end());
+    for (auto v: my_heap) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+    
     return 0;
 };

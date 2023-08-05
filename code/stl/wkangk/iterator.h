@@ -644,6 +644,32 @@ distance_type(const reverse_bidirectional_iterator<BidirectionalIterator, T,
     return (Distance*)(0);
 }
 
+template <class T>
+inline ptrdiff_t* distance_type(const T*) { return (ptrdiff_t*)(0); }
+
+
+template <class T, class Distance> 
+inline Distance* distance_type(const input_iterator<T, Distance>&) {
+  return (Distance*)(0);
+}
+
+template <class T, class Distance> 
+inline Distance* distance_type(const forward_iterator<T, Distance>&) {
+  return (Distance*)(0);
+}
+
+template <class T, class Distance> 
+inline Distance* 
+distance_type(const bidirectional_iterator<T, Distance>&) {
+  return (Distance*)(0);
+}
+
+template <class T, class Distance> 
+inline Distance* 
+distance_type(const random_access_iterator<T, Distance>&) {
+  return (Distance*)(0);
+}
+
 /* 判断两个迭代器指针是不是一样 */
 template <class BidirectionalIterator, class T, class Reference, 
           class Distance>
