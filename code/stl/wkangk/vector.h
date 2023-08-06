@@ -27,9 +27,11 @@ class vector
 public:
     typedef T               value_type;
     typedef value_type*     pointer;
-    typedef value_type*     iterator;       /* 因为 vector 本质上就是数组, 所以它的迭代器
-                                            就完全可以使用指针 */
+    typedef value_type*     iterator;       /* 因为 vector 本质上就是数组, 所以它的迭代器就完全可以使用指针 */
+    typedef const iterator     const_iterator;       
+
     typedef value_type&     reference;       
+    typedef const reference      const_reference;       
     typedef size_t          size_type;       
     typedef ptrdiff_t       difference_type;
 
@@ -53,6 +55,15 @@ public:
     vector(long n, const value_type& value)
     {
         fill_initialize(n, value);
+    }
+
+    vector(const_iterator first, const_iterator last) 
+    {
+        size_type n = 0;
+        distance(first, last, n);
+        start_ = allocate_and_copy(n, first, last);
+        finish_ = start_ + n;
+        end_of_storage_ = finish_;
     }
 
     ~vector()
@@ -142,6 +153,14 @@ private:
     }
 
     void insert_aux(iterator position, const value_type& value);
+
+
+    iterator allocate_and_copy(size_type n, const_iterator first, const_iterator last) 
+    {
+        iterator result = data_allocator::allocate(n);
+        uninitialized_copy(first, last, result);
+        return result;
+    }
 
 private:
     iterator    start_;         /* 已用空间的起始位置 */

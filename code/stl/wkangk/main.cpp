@@ -20,6 +20,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "stack.h"
 #include "queue.h"
 #include "heap.h"
+#include "priority_queue.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -202,6 +203,26 @@ int main()
         std::cout << v << " ";
     }
     std::cout << std::endl;
+
     
+    /* -------------------------------------------------------------------------------
+     * priority_queue
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\n\npriority_queue" << std::endl;
+
+    int ia[9] = {0, 1, 2, 3, 4, 8, 9, 3, 5};
+    priority_queue<int> ipq(ia, ia + 9);
+    std::cout << ipq.size() << std::endl;
+
+    for (size_t i = 0; i < ipq.size(); ++i) {
+        std::cout << ipq.top() << " ";
+    }
+    std::cout << std::endl;
+
+    while (!ipq.empty()) {
+        std::cout << ipq.top() << " ";
+        ipq.pop();
+    }
+    std::cout << std::endl;
     return 0;
 };
