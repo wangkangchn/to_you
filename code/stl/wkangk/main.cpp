@@ -21,6 +21,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "queue.h"
 #include "heap.h"
 #include "priority_queue.h"
+#include "slist.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -222,6 +223,33 @@ int main()
     while (!ipq.empty()) {
         std::cout << ipq.top() << " ";
         ipq.pop();
+    }
+    std::cout << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * slist
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\n\nslist<int>" << std::endl;
+
+    slist<double> my_slist;
+
+    for (size_t i = 0; i < 10; ++i) {
+        my_slist.push_front(12.f * i);
+    }
+
+    std::cout << "my_slist.size() = " << my_slist.size() << std::endl;
+    for (auto& v : my_slist) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+
+    my_slist.pop_front();
+    my_slist.pop_front();
+    my_slist.pop_front();
+
+    for (auto& v : my_slist) {
+        std::cout << v << " ";
     }
     std::cout << std::endl;
     return 0;
