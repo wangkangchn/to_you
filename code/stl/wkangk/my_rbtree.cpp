@@ -162,7 +162,9 @@ private:
             s_is_left ? rl_rotate(x, p, g) : lr_rotate(x, p, g);
 
         } else if ((s && s->color_ == rb_tree_red)) {
-            /* 状况 3: S 为红且 X 为外侧插入, GG 为黑 */
+            /* 状况 3: S 为红且 X 为外侧插入, GG 为黑 
+            S 为红不需要转, 仅需要调整节点！！！
+            */
             p->color_ = rb_tree_black;
             s->color_ = rb_tree_black;
 
@@ -295,10 +297,18 @@ int main()
     tree.insert(13);
     tree.insert(12133);
     tree.insert(59);
+    tree.insert(123);
     tree.insert(1223);
     tree.insert(33);
     tree.insert(3);
     tree.insert(345);
+    tree.insert(1257);
+    tree.insert(1);
+    tree.insert(1089);
+    tree.insert(10489);
+    tree.insert(89);
+    tree.insert(10893);
+    tree.insert(1012389);
 
     tree.show();
     return 0;

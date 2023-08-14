@@ -901,7 +901,7 @@ rb_tree<K, V, KeyOfValue, Compare, Alloc>::__copy(link_type x, link_type p) {
 }
 
 template <class Key, class Value, class KeyOfValue, class Compare, class Alloc>
-void rb_tree<Key, Value, KeyOfValue, Compare, Alloc>::__erase(link_type x) {
+void rb_tree<Key, Value, KeyOfValue, Compare, Alloc>:: __erase(link_type x) {
                                 // erase without rebalancing
   while (x != 0) {
     __erase(right(x));
