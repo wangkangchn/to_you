@@ -7,6 +7,7 @@ Copyright © wkangk <wangkangchn@163.com>
 时间	   	: 2023-05-19 20:54
 ***************************************************************/
 #include <iostream>
+#include <functional>
 #include <typeinfo> 
 #include <chrono> 
 #include <thread> 
@@ -22,6 +23,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "heap.h"
 #include "priority_queue.h"
 #include "slist.h"
+#include "rbtree.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -36,6 +38,12 @@ void show(const Container& container)
     }
     std::cout << std::endl;
 }
+
+template <typename T>
+struct identity
+{
+    T operator()(const T& v) const {return v; }
+};
 
 int main()
 {
@@ -252,5 +260,30 @@ int main()
         std::cout << v << " ";
     }
     std::cout << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * rbtree
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\n\nrbtree<int>" << std::endl;
+
+
+    rb_tree<int, int, identity<int>, std::less<int>> itree;
+    std::cout << itree.size() << std::endl;
+    itree.insert_unique(10);
+    itree.insert_unique(7);
+    itree.insert_unique(8);
+    itree.insert_unique(15);
+    itree.insert_unique(5);
+    itree.insert_unique(6);
+    itree.insert_unique(11);
+    itree.insert_unique(13);
+    itree.insert_unique(12);
+    itree.insert_equal(12);
+    std::cout << itree.size() << std::endl;
+    for (auto it = itree.begin(); it != itree.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << "\n";
     return 0;
 };
