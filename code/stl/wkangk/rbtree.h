@@ -191,6 +191,7 @@ public:
     typedef ptrdiff_t difference_type;
     typedef size_t size_type;
     typedef __rb_tree_iterator<value_type, reference, pointer> iterator;
+    typedef const iterator const_iterator;
 
 public:
     rb_tree(const Compare& comp=Compare()) :

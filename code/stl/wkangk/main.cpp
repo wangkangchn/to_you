@@ -24,6 +24,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "priority_queue.h"
 #include "slist.h"
 #include "rbtree.h"
+#include "set.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -38,12 +39,6 @@ void show(const Container& container)
     }
     std::cout << std::endl;
 }
-
-template <typename T>
-struct identity
-{
-    T operator()(const T& v) const {return v; }
-};
 
 int main()
 {
@@ -285,5 +280,25 @@ int main()
         std::cout << *it << " ";
     }
     std::cout << "\n";
+
+
+    /* -------------------------------------------------------------------------------
+     * set
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nset<int>" << std::endl;
+    set<int> iset;
+    iset.insert(1);
+    iset.insert(10);
+    iset.insert(5);
+    iset.insert(55);
+    iset.insert(25);
+    iset.insert(2255);
+    iset.insert(255);
+    std::cout << "iset.size(): " << iset.size() << std::endl;
+
+    for (auto v : iset) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
     return 0;
 };
