@@ -171,7 +171,7 @@ struct __rb_tree_iterator : public __rb_tree_iterator_base
  * RB tree 数据结构
  * ------------------------------------------------------------------------------- */
 template <typename Key, typename Value, class KeyOfValue, class Compare, class Alloc=alloc>
-struct rb_tree
+struct my_rb_tree
 {
 private:
     typedef void* void_pointer;
@@ -194,13 +194,13 @@ public:
     typedef const iterator const_iterator;
 
 public:
-    rb_tree(const Compare& comp=Compare()) :
+    my_rb_tree(const Compare& comp=Compare()) :
         node_count_(0), key_compare_(comp)
     {
         init();
     }
 
-    ~rb_tree()
+    ~my_rb_tree()
     {
         clear();
         put_node(header_);
@@ -259,7 +259,7 @@ public:
             return std::make_pair(__insert(x, y, v), true);
         }
 
-        /* 到这里表示新插入值与树中键值重复 */
+        /* 到这里表示新插入值与树中键值重复, 相同时, 不插入 */
         return std::make_pair(j, false);
     }
 

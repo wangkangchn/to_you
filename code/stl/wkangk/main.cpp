@@ -7,6 +7,7 @@ Copyright © wkangk <wangkangchn@163.com>
 时间	   	: 2023-05-19 20:54
 ***************************************************************/
 #include <iostream>
+#include <string>
 #include <functional>
 #include <typeinfo> 
 #include <chrono> 
@@ -25,6 +26,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "slist.h"
 #include "rbtree.h"
 #include "set.h"
+#include "map.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -263,7 +265,7 @@ int main()
     std::cout << "\n\n\nrbtree<int>" << std::endl;
 
 
-    rb_tree<int, int, identity<int>, std::less<int>> itree;
+    my_rb_tree<int, int, identity<int>, std::less<int>> itree;
     std::cout << itree.size() << std::endl;
     itree.insert_unique(10);
     itree.insert_unique(7);
@@ -300,5 +302,20 @@ int main()
         std::cout << v << " ";
     }
     std::cout << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * set
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nmap<int, std::string>" << std::endl;
+    map<int, std::string> my_map;
+    for (size_t i = 0; i < 10; ++i) {
+        my_map.insert(std::make_pair(i, std::to_string(i)));
+    }
+    std::cout << "my_map.size(): " << my_map.size() << std::endl;
+
+    for (auto& v : my_map) {
+        std::cout << v.first << ": " << v.second << std::endl;
+    }
     return 0;
 };

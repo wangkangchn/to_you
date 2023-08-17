@@ -39,7 +39,7 @@ public:
 
 private:
     /* 通过值找键, 直接返回原值 */
-    typedef rb_tree<key_type, value_type, identity<value_type>, key_compare, Alloc> rep_type;
+    typedef my_rb_tree<key_type, value_type, identity<value_type>, key_compare, Alloc> rep_type;
     rep_type t_;
 
 public:
@@ -62,14 +62,15 @@ public:
     }
 
 public:
+    /* 不用的就不会编译!!! */
     key_compare key_comp() const
     {
-        return t_.key_comp();
+        return t_.key_compare();
     }
 
     value_compare value_comp() const
     {
-        return t_.key_comp();
+        return t_.key_compare();
     }
 
     iterator begin() const
