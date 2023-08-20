@@ -1,13 +1,13 @@
 /***************************************************************
  * @copyright  Copyright © 2023 wkangk.
- * @file       map.h
+ * @file       multimap.h
  * @author     wkangk <wangkangchn@163.com>
  * @version    v1.0
  * @brief      
  * @date       2023-08-17 20:41
  **************************************************************/
-#ifndef __WKANGK_STL_MAP_H__ 
-#define __WKANGK_STL_MAP_H__ 
+#ifndef __WKANGK_STL_MULTIMAP_H__ 
+#define __WKANGK_STL_MULTIMAP_H__ 
 #include "rbtree.h"
 #include "common.h"
 
@@ -16,7 +16,7 @@ __WKANGK_STL_BEGIN_NAMESPACE
 
 /* 第三个参数是键比较器 */
 template <typename Key, typename Value, typename Compare=std::less<Key>, typename Alloc=alloc>
-class map
+class multimap
 {
 public:
     typedef Key key_type;
@@ -28,7 +28,7 @@ public:
     /* 比较实值, 就是转为键值 */
     class value_compare : public std::binary_function<value_type, value_type, bool>
     {
-        friend class map<Key, Value, Compare, Alloc>;   /* 友元的使用, 我还是 get 不到点 */
+        friend class multimap<Key, Value, Compare, Alloc>;   /* 友元的使用, 我还是 get 不到点 */
     
     protected:
         Compare comp;
@@ -50,13 +50,13 @@ public:
     typedef typename rep_type::const_pointer const_pointer;
     typedef typename rep_type::reference reference;
     typedef typename rep_type::const_reference const_reference;
-    typedef typename rep_type::iterator iterator;   /* map 是可以修改实值的, 所以不和 set 一样, 使用 const iterator */
+    typedef typename rep_type::iterator iterator;   /* multimap 是可以修改实值的, 所以不和 set 一样, 使用 const iterator */
     typedef typename rep_type::const_iterator const_iterator;
     typedef typename rep_type::size_type size_type;
     typedef typename rep_type::difference_type difference_type;
 
-    map() : t_(Compare()) {}
-    explicit map(const Compare& comp) : t_(comp) {}
+    multimap() : t_(Compare()) {}
+    explicit multimap(const Compare& comp) : t_(comp) {}
 
     key_compare key_comp() const
     {
@@ -99,9 +99,9 @@ public:
         return (*((insert(value_type(x, Value()))).first)).second;
     }
 
-    std::pair<iterator, bool> insert(const value_type& v)
+    iterator insert(const value_type& v)
     {   /* 不能有重复数据 */
-        return t_.insert_unique(v);
+        return t_.insert_equal(v);
     }
 
     size_type erase(const key_type& k)
@@ -118,4 +118,4 @@ public:
 
 __WKANGK_STL_END_NAMESPACE
 
-#endif	/* !__WKANGK_STL_MAP_H__ */
+#endif	/* !__WKANGK_STL_MULTIMAP_H__ */

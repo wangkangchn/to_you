@@ -1,23 +1,23 @@
 /***************************************************************
  * @copyright  Copyright © 2023 wkangk.
- * @file       set.h
+ * @file       multiset.h
  * @author     wkangk <wangkangchn@163.com>
  * @version    v1.0
  * @brief      集合
  * @date       2023-08-16 20:55
  **************************************************************/
-#ifndef __WKANGK_STL_SET_H__
-#define __WKANGK_STL_SET_H__
+#ifndef __WKANGK_STL_MULTISET_H__
+#define __WKANGK_STL_MULTISET_H__
 #include "rbtree.h"
 #include "common.h"
 
-__WKANGK_STL_BEGIN_NAMESPACE
 
+__WKANGK_STL_BEGIN_NAMESPACE
 
 template <typename Key,
             typename Compare=std::less<Key>,
             typename Alloc=alloc>
-class set
+class multiset
 {
 public:
     /* 键就是值, 值就是键, 就像正常插入一个元素一样!!! */
@@ -34,22 +34,22 @@ private:
     rep_type t_;
 
 public:
-    /* 所有的东西都是不可修改的, 为何? 因为 set 是基于红黑树实现的, 而其键就是值, 当我们
+    /* 所有的东西都是不可修改的, 为何? 因为 multiset 是基于红黑树实现的, 而其键就是值, 当我们
     对值进行修改时, 就相当于改了键, 就破坏了红黑树的性质, 但是 stl 无从得知, 就会出现后续的
-    问题. 所以在迭代的过程中不能修改 set 的值!!! */
+    问题. 所以在迭代的过程中不能修改 multiset 的值!!! */
     typedef typename rep_type::const_pointer pointer;
     typedef typename rep_type::const_pointer const_pointer;
     typedef typename rep_type::const_reference reference;
     typedef typename rep_type::const_reference const_reference;
     typedef typename rep_type::const_iterator iterator;
 
-    set() : t_(Compare()) {} 
-    explicit set(const Compare& comp) : t_(comp) {} 
+    multiset() : t_(Compare()) {} 
+    explicit multiset(const Compare& comp) : t_(comp) {} 
     template <typename InputIterator>
-    set(InputIterator first, InputIterator last) : t_(Compare())
+    multiset(InputIterator first, InputIterator last) : t_(Compare())
     {   
-        /* 因为 set 是唯一的元素, 所以插入的时候只能使用唯一的插入, 而不能使用相等的插入 */
-        t_.insert_unique(first, last);
+        /* 因为 multiset 是唯一的元素, 所以插入的时候只能使用唯一的插入, 而不能使用相等的插入 */
+        t_.insert_equal(first, last);
     }
 
 public:
@@ -89,9 +89,9 @@ public:
         return t_.max_size();
     }
 
-    std::pair<iterator, bool> insert(const value_type& v)
+    iterator insert(const value_type& v)
     {
-        return t_.insert_unique(v);
+        return t_.insert_equal(v);
     }
 
     size_type erase(const key_type& k)
@@ -107,4 +107,4 @@ public:
 
 __WKANGK_STL_END_NAMESPACE
 
-#endif	/* !__WKANGK_STL_SET_H__ */
+#endif	/* !__WKANGK_STL_MULTISET_H__ */

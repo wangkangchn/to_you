@@ -27,6 +27,8 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "rbtree.h"
 #include "set.h"
 #include "map.h"
+#include "multimap.h"
+#include "multiset.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -305,11 +307,12 @@ int main()
 
 
     /* -------------------------------------------------------------------------------
-     * set
+     * map<int, std::string
      * ------------------------------------------------------------------------------- */
     std::cout << "\n\nmap<int, std::string>" << std::endl;
     map<int, std::string> my_map;
     for (size_t i = 0; i < 10; ++i) {
+        my_map.insert(std::make_pair(i, std::to_string(i)));
         my_map.insert(std::make_pair(i, std::to_string(i)));
     }
     std::cout << "my_map.size(): " << my_map.size() << std::endl;
@@ -317,5 +320,37 @@ int main()
     for (auto& v : my_map) {
         std::cout << v.first << ": " << v.second << std::endl;
     }
+
+
+    /* -------------------------------------------------------------------------------
+     * multimap<int, std::string
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nmultimap<int, std::string>" << std::endl;
+    multimap<int, std::string> my_multimap;
+    for (size_t i = 0; i < 10; ++i) {
+        my_multimap.insert(std::make_pair(i, std::to_string(i)));
+        my_multimap.insert(std::make_pair(i, std::to_string(i)));
+    }
+    std::cout << "my_multimap.size(): " << my_multimap.size() << std::endl;
+
+    for (auto& v : my_multimap) {
+        std::cout << v.first << ": " << v.second << std::endl;
+    }
+
+    /* -------------------------------------------------------------------------------
+     * multiset<int>
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nmultiset<int>" << std::endl;
+    multiset<int> my_multiset;
+    for (size_t i = 0; i < 10; ++i) {
+        my_multiset.insert(i);
+        my_multiset.insert(i);
+    }
+    std::cout << "my_multiset.size(): " << my_multiset.size() << std::endl;
+
+    for (auto& v : my_multiset) {
+        std::cout << v  << " ";
+    }
+    std::cout << std::endl;
     return 0;
 };
