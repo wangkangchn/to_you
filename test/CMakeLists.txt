@@ -10,6 +10,7 @@ set(THIRDPARTY_DIR "${PROJECT_SOURCE_DIR}/thirdparty")
 include_directories(    ${CMAKE_CURRENT_SOURCE_DIR}
                         "${THIRDPARTY_DIR}/zip/include"
                         "${THIRDPARTY_DIR}/sqlite3/include"
+                        "${THIRDPARTY_DIR}/nlohmann/include"
                 )
 
 link_directories(       "${THIRDPARTY_DIR}/zip/lib"
@@ -49,3 +50,4 @@ endmacro(add_unittest_multi)
 add_unittest(unittest_gflags)
 add_unittest(unittest_zip)
 add_unittest(unittest_sqlite3)
+add_unittest(unittest_json)
