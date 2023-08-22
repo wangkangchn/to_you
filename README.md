@@ -2,6 +2,9 @@
 <img src="material/qrcode_.jpg"> 
 
 
+---
+20240822 提交说明:  
+1. 完成 hashtable 简易实现
 
 ---
 20240821 提交说明:  

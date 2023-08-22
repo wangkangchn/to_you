@@ -6,12 +6,12 @@
  * @brief      哈希表
  * @date       2023-08-21 20:20
  **************************************************************/
-#ifndef __WKANGK_STL_DEQUE_H__ 
-#define __WKANGK_STL_DEQUE_H__ 
+#ifndef __WKANGK_STL_HASH_TABLE_E_H__ 
+#define __WKANGK_STL_HASH_TABLE_E_H__ 
 #include <stdint.h>
+#include <algorithm>
 
-#include "config.h"
-#include "alloc.h"
+#include "vector.h"
 
 
 __WKANGK_STL_BEGIN_NAMESPACE
@@ -27,15 +27,18 @@ struct __hashtable_node
     __hashtable_node* next_;
 };
 
+template <typename Key, typename Value, typename HashFcn, typename ExtractKey, typename EqualKey, typename Alloc=alloc>
+class hash_table;
+
 template <typename Key, typename Value, typename HashFcn, typename ExtractKey, typename EqualKey, typename Alloc>
 class __hashtable_iterator
 {
-    typedef hashtable<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc> hashtable;
+    typedef hash_table<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc> hashtable;
     typedef __hashtable_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc> iterator;
 
     typedef __hashtable_node<Value> node;       /* 具体存储数据的节点 */
 
-    typedef forward_iterator_tah iterator_category;
+    typedef forward_iterator_tag iterator_category;
     typedef Value value_type;
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
@@ -44,6 +47,7 @@ class __hashtable_iterator
 
 public:
     __hashtable_iterator() {}
+    __hashtable_iterator(node* n, hashtable* tab) : cur_(n), ht_(tab) {}
 
     reference operator*() const { return cur_->value_; }
     pointer operator->() const { return &(operator*()); }
@@ -51,12 +55,12 @@ public:
     {
         /* 先在桶内前进, 到头了之后, 前进到下一个桶 */
         const node* old = cur_;
-        cur_ = cur_->next;
+        cur_ = cur_->next_;
         if (!cur_) {    /* 桶内到头了, 换一下个桶 */
             size_type bucket = ht_->bkt_num(old->value_);   /* 先算出当前元素所在的桶号, 而后再向下移动 */
 
-            while (!cur_ && ++bucket < ht_->buckets.size()) {
-                cur_ = ht_->buckets[bucket];    /* 有元素, 并且还在表范围之内, 就可以拿到!!! */
+            while (!cur_ && ++bucket < ht_->buckets_.size()) {
+                cur_ = ht_->buckets_[bucket];    /* 有元素, 并且还在表范围之内, 就可以拿到!!! */
             }
         }
 
@@ -114,4 +118,217 @@ size_t max_buncket_count()
 {
     return __stl_prime_list[__stl_num_primes - 1];
 }
+
+template <typename Key, typename Value, typename HashFcn, typename ExtractKey, typename EqualKey, typename Alloc>
+class hash_table
+{
+    typedef __hashtable_node<Value> node;
+    typedef simple_alloc<node, Alloc> node_allocator;
+
+public:
+    typedef Key key_type;
+    typedef Value value_type;
+    typedef HashFcn hasher;
+    typedef EqualKey key_equal;
+    typedef size_t size_type;
+    typedef __hashtable_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc>  iterator;
+
+    friend struct __hashtable_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc>;
+
+    hash_table(size_type n, const hasher& hf, const key_equal& eql) :
+        hash_(hf), equals_(eql), get_key_(ExtractKey()), num_elements_(0)        
+    {
+        initialize_buckets(n);
+    }
+
+    ~hash_table() { clear(); }
+
+public:
+    size_type size() const { return num_elements_; }
+    size_type bucket_count() const { return buckets_.size(); }
+    size_type max_size() const { return size_type(-1); }
+    bool empty() const { return size() == 0; }
+
+    iterator begin()
+    { 
+        for (size_type n = 0; n < buckets_.size(); ++n) {
+            if (buckets_[n]) {
+                return iterator(buckets_[n], this);
+            }
+        }
+        return end();
+    }
+
+    iterator end() { return iterator(0, this); }
+
+
+    /* 
+        插入时, 若存在重复元素, 则不进行插入
+     */
+    std::pair<iterator, bool> insert_unique(const value_type& value)
+    {
+        resize(num_elements_ + 1);   /* 当已有元素数目比桶数大时, 就重新调整桶, 使数据更加分散 */
+        return insert_unique_noresize(value);
+    }
+
+    iterator insert_euqal(const value_type& value)
+    {
+        resize(num_elements_ + 1);   /* 当已有元素数目比桶数大时, 就重新调整桶, 使数据更加分散 */
+        return insert_equal_noresize(value);
+    }
+
+    /* 重新调整桶大小 以及 布局 */
+    void resize(size_type num_elements_hit)
+    {
+        const size_type old_n = buckets_.size();
+        if (num_elements_hit > old_n) {
+            const size_type n = next_size(old_n);
+            if (n > old_n) {
+                vector<node*, Alloc> tmp(n, nullptr);
+                /* 一个桶一个桶的重新散列 */
+                for (size_type bucket = 0; bucket < old_n; ++bucket) {
+                    node* first = buckets_[bucket];
+                    while (first) {
+                        /* 重新散列 */
+                        size_type new_bucket = bkt_num(first->value_, n);
+                        /* 头插 */
+                        buckets_[bucket] = first->next_;
+                        first->next_ = tmp[new_bucket];
+                        tmp[new_bucket] = first;
+                        first = buckets_[bucket];
+                    }
+                }
+                buckets_.swap(tmp);
+            }
+        }
+    }
+
+    void clear()
+    {
+        for (size_type i = 0; i < buckets_.size(); ++i) {
+            node* cur = buckets_[i];
+            while (cur != nullptr) {
+                node* next = cur->next_;
+                delete_node(cur);
+                cur = next;
+            }
+            buckets_[i] = nullptr;
+        }
+
+        num_elements_ = 0;
+
+        /* 释放了 桶节点, 但是桶列表 vector 是没有释放的, 这样就可以反复使用,
+        这也就是为什么 clear 后, 容器容量是不变的!!! */
+    }
+
+private:
+    /* 允许插入相同键的数据 */
+    iterator insert_equal_noresize(const value_type& value)
+    {
+        const size_type n = bkt_num(value);
+        node* first = buckets_[n];
+
+        for (node* cur = first; cur; cur = cur->next_) {
+            if (equals_(get_key_(cur->value_), get_key(value))) {       /* 比较 key, 看是不是一样, 一样就说明冲突了, 直接返回 */
+                /* 头插 */
+                node* tmp = new_node(value);
+                tmp->next_ = cur->next_;
+                cur->next_ = tmp;
+                ++num_elements_;
+                return iterator(tmp, this);
+            }
+        }
+
+        /* 没有重复键值 */
+        node* tmp = new_node(value);
+        tmp->next_ = first;
+        buckets_[n] = tmp;
+        ++num_elements_;
+        return iterator(tmp, this);
+    }
+
+    std::pair<iterator, bool> insert_unique_noresize(const value_type& value)
+    {
+        const size_type n = bkt_num(value);
+        node* first = buckets_[n];
+
+        for (node* cur = first; cur; cur = cur->next_) {
+            if (equals_(get_key_(cur->value_), get_key_(value))) {       /* 比较 key, 看是不是一样, 一样就说明冲突了, 直接返回 */
+                return {iterator(cur, this), false};
+            }
+        }
+
+        /* 头插 */
+        node* tmp = new_node(value);
+        tmp->next_ = first;
+        buckets_[n] = tmp;
+        ++num_elements_;
+        return {iterator(tmp, this), true};
+    }
+
+    /* 
+        分配指定大小的桶数组
+     */
+    void initialize_buckets(size_type n)
+    {
+        const size_type n_buckets = next_size(n);
+        buckets_.reserve(n_buckets);    /* 直接借助底层容器进行扩张即可 */
+        buckets_.insert(buckets_.end(), n_buckets, (node*)(0));
+        num_elements_ = 0;
+    }
+
+    /* 获取下一个可用空间 */
+    size_type next_size(size_type n)
+    {
+        return __stl_next_prime(n);
+    }
+
+    node* new_node(const value_type& value)
+    {
+        node* n = node_allocator::allocate();
+        n->next_ = nullptr;
+
+        construct(&n->value_, value);
+        return n;
+    }
+
+    void delete_node(node* n)
+    {
+        destroy(&n->value_);
+        node_allocator::deallocate(n);
+    }
+
+    size_type bkt_num(const value_type& value, size_type n) const
+    {
+        return bkt_num_key(get_key_(value), n);
+    }
+
+    size_type bkt_num(const value_type& value) const
+    {
+        return bkt_num_key(get_key_(value));
+    }
+
+    /* 计算哈希值 */
+    size_type bkt_num_key(const key_type& key) const
+    {
+        return bkt_num_key(key, buckets_.size());
+    }
+
+    size_type bkt_num_key(const key_type& key, size_type n) const
+    {
+        return hash_(key) % n;  /* 这里就能看出, 是通过计算 key 的哈希值, 而后对某个数取余而得到索引 */
+    }
+
+private:
+    hasher hash_;
+    key_equal equals_;
+    ExtractKey get_key_;
+
+    vector<node*, Alloc> buckets_;       /* 用 vector 作为底层桶容器 */
+    size_type num_elements_;
+};
+
+
 __WKANGK_STL_END_NAMESPACE
+
+#endif

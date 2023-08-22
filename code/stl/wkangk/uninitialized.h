@@ -47,7 +47,7 @@ template <typename ForwardIterator, typename Size, typename T, typename T1>
 ForwardIterator __uninitialized_fill_n(ForwardIterator first, Size n, const T& value, T1*)
 {   
     typedef typename __type_traits<T1>::is_POD_type is_POD;
-    return __uninitialized_fill_aux(first, n, value, is_POD());
+    return __uninitialized_fill_n_aux(first, n, value, is_POD());
 }
 
 /**

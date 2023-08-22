@@ -125,6 +125,27 @@ public:
 
     void insert(iterator postion, size_type n, const value_type& value);
 
+    void swap(vector<T, Alloc>& x) 
+    {
+        std::swap(start_, x.start_);
+        std::swap(finish_, x.finish_);
+        std::swap(end_of_storage_, x.end_of_storage_);
+    }
+    
+
+    void reserve(size_type n) 
+    {
+        if (capacity() < n) {
+            const size_type old_size = size();
+            iterator tmp = allocate_and_copy(n, start_, finish_);
+            destroy(start_, finish_);
+            deallocate();
+            start_ = tmp;
+            finish_ = tmp + old_size;
+            end_of_storage_ = start_ + n;
+        }
+    }
+
 private:
     typedef simple_alloc<value_type, Alloc> data_allocator;
 

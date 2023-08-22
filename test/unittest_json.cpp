@@ -62,12 +62,19 @@ NLOHMANN_JSON_SERIALIZE_ENUM( TaskState, {
 
 TEST(Learn, testJson)
 {
-    std::string path{"../../test/test_file/test_json.json"};
-    std::ifstream fin(path);
+    // std::string path{"../../test/test_file/test_json.json"};
+    // std::ifstream fin(path);
     json j;
-    fin >> j;
+    // fin >> j;
 
     INFO("{}", j.dump() );
+
+    std::vector<int> aaa{1,2,3,4,5};
+    j["aaa"] = aaa;
+
+    j["aaa"].emplace_back(213);
+
+    INFO("{}", j["aaa"].dump());
 
 }
 
