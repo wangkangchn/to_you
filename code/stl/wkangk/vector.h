@@ -73,6 +73,11 @@ public:
     }
 
 public:
+    /* 下面两个 const 也很重要, operator[] const 只能访问 const 方法
+    也就只能访问这两个, 没有它们的话就会报错 ‘this’ argument discards qualifiers */
+    const_iterator begin() const { return start_; }
+    const_iterator end() const { return finish_; }
+    
     iterator begin()    { return start_; }
     iterator end()    { return finish_; }
     size_type size() const { return static_cast<size_type>(finish_ - start_); }      
@@ -81,6 +86,7 @@ public:
     size_type capacity() const { return static_cast<size_type>(end_of_storage_ - start_); }
     bool empty() const { return finish_ == start_; }
     reference operator[](size_type n) { return *(begin() + n); }
+    const_reference operator[](size_type n) const { return *(begin() + n); }
     reference front() { return *begin(); }
     reference back() { return *(end() - 1); }   /* 区间为左闭右开 */
     void push_back(const value_type& value)

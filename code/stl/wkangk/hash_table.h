@@ -30,6 +30,8 @@ struct __hashtable_node
 template <typename Key, typename Value, typename HashFcn, typename ExtractKey, typename EqualKey, typename Alloc=alloc>
 class hash_table;
 
+
+
 template <typename Key, typename Value, typename HashFcn, typename ExtractKey, typename EqualKey, typename Alloc>
 class __hashtable_iterator
 {
@@ -86,11 +88,74 @@ public:
         return cur_ != it.cur_;
     }
 
-private:
     node* cur_;         /* 指向当前数据节点 */
     hashtable* ht_;     /* 整个 hashtable 结构 */
 };
 
+
+/* 这个类直接超过来了 */
+template <typename Key, typename Value, typename HashFcn,
+          typename ExtractKey, typename EqualKey, typename Alloc>
+struct __hashtable_const_iterator 
+{
+    typedef hash_table<Key, Value,  HashFcn, ExtractKey, EqualKey, Alloc>
+            hashtable;
+    typedef __hashtable_iterator<Key, Value,  HashFcn, 
+                                ExtractKey, EqualKey, Alloc>
+            iterator;
+    typedef __hashtable_const_iterator<Key, Value,  HashFcn, 
+                                        ExtractKey, EqualKey, Alloc>
+            const_iterator;
+    typedef __hashtable_node<Value> node;
+
+    typedef forward_iterator_tag iterator_category;
+    typedef Value value_type;
+    typedef ptrdiff_t difference_type;
+    typedef size_t size_type;
+    typedef const Value& reference; /* 都是不可变得 */
+    typedef const Value* pointer;
+
+
+    __hashtable_const_iterator(const node* n, const hashtable* tab)
+        : cur_(n), ht_(tab) {}
+    __hashtable_const_iterator() {}
+    __hashtable_const_iterator(const iterator& it) : cur_(it.cur_), ht_(it.ht_) {}
+    reference operator*() const { return cur_->value_; }
+    pointer operator->() const { return &(operator*()); }
+
+    const_iterator& operator++()
+    {
+        const node* old = cur_;
+        cur_ = cur_->next_;
+        if (!cur_) {
+            size_type bucket = ht_->bkt_num(old->value_);
+            while (!cur_ && ++bucket < ht_->buckets_.size()) {
+                cur_ = ht_->buckets_[bucket];
+            }
+        }
+        return *this;
+    }
+    
+    const_iterator operator++(int)
+    {
+        const_iterator tmp = *this;
+        ++*this;
+        return tmp;
+    }
+
+    bool operator==(const const_iterator& it) const 
+    { 
+        return cur_ == it.cur_; 
+    }
+
+    bool operator!=(const const_iterator& it) const 
+    { 
+        return cur_ != it.cur_; 
+    }
+
+    const node* cur_;
+    const hashtable* ht_;
+};
 
 
 static const int __stl_num_primes = 28;     /* 预先找好 28 个整数 */
@@ -130,10 +195,20 @@ public:
     typedef Value value_type;
     typedef HashFcn hasher;
     typedef EqualKey key_equal;
+
     typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef value_type*       pointer;
+    typedef const value_type* const_pointer;
+    typedef value_type&       reference;
+    typedef const value_type& const_reference;
+
     typedef __hashtable_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc>  iterator;
+    typedef __hashtable_const_iterator<Key, Value, HashFcn, 
+                                     ExtractKey, EqualKey, Alloc> const_iterator;
 
     friend struct __hashtable_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc>;
+    friend struct __hashtable_const_iterator<Key, Value, HashFcn, ExtractKey, EqualKey, Alloc>;
 
     hash_table(size_type n, const hasher& hf, const key_equal& eql) :
         hash_(hf), equals_(eql), get_key_(ExtractKey()), num_elements_(0)        
@@ -160,6 +235,21 @@ public:
     }
 
     iterator end() { return iterator(0, this); }
+
+    const_iterator begin() const
+    {
+        for (size_type n = 0; n < buckets_.size(); ++n) {
+            if (buckets_[n]) {
+                return const_iterator(buckets_[n], this);
+            }
+        }
+        return end();
+    }
+
+    const_iterator end() const 
+    { 
+        return const_iterator(0, this); 
+    }
 
 
     /* 
@@ -230,7 +320,7 @@ private:
 
         for (node* cur = first; cur; cur = cur->next_) {
             if (equals_(get_key_(cur->value_), get_key(value))) {       /* 比较 key, 看是不是一样, 一样就说明冲突了, 直接返回 */
-                /* 头插 */
+                /* 存在重复, 插入原有元素之前 */
                 node* tmp = new_node(value);
                 tmp->next_ = cur->next_;
                 cur->next_ = tmp;
@@ -239,7 +329,7 @@ private:
             }
         }
 
-        /* 没有重复键值 */
+        /* 没有重复键值, 才桶顶进行插入 */
         node* tmp = new_node(value);
         tmp->next_ = first;
         buckets_[n] = tmp;
