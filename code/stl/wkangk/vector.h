@@ -11,8 +11,8 @@ Copyright © wkangk <wangkangchn@163.com>
 #include <algorithm>
 
 #include "config.h"
-#include "alloc.h"
 #include "construct.h"
+#include "alloc.h"
 #include "uninitialized.h"
 
 
@@ -68,7 +68,7 @@ public:
 
     ~vector()
     {
-        destroy(start_, finish_);   /* 先析构 */
+        wkangk_stl::destroy(start_, finish_);   /* 先析构 */
         deallocate();               /* 再释放内存 */
     }
 
@@ -144,7 +144,7 @@ public:
         if (capacity() < n) {
             const size_type old_size = size();
             iterator tmp = allocate_and_copy(n, start_, finish_);
-            destroy(start_, finish_);
+            wkangk_stl::destroy(start_, finish_);
             deallocate();
             start_ = tmp;
             finish_ = tmp + old_size;
@@ -167,7 +167,7 @@ private:
     iterator allocate_and_fill(size_type n, const T& value)
     {
         auto result = data_allocator::allocate(n);
-        return uninitialized_fill_n(result, n, value);
+        return  wkangk_stl::uninitialized_fill_n(result, n, value);
     }
 
     /* 释放内存 */
@@ -185,7 +185,7 @@ private:
     iterator allocate_and_copy(size_type n, const_iterator first, const_iterator last) 
     {
         iterator result = data_allocator::allocate(n);
-        uninitialized_copy(first, last, result);
+        wkangk_stl::uninitialized_copy(first, last, result);    /* o 虽然是在命名空间中, 那为啥 stl 命名空间的也会见到??? */
         return result;
     }
 
@@ -252,15 +252,15 @@ void vector<T, Alloc>::insert(iterator position, size_type n, const value_type& 
             iterator old_finish = finish_;
             if (elems_after > n) {  /* 插入点之后现有元素的数目 > 新增元素个数 */
                 /* 先拷贝多出来的, 再拷贝前面, 最后填充 */
-                uninitialized_copy(finish_ - n, finish_, finish_);
+                wkangk_stl::uninitialized_copy(finish_ - n, finish_, finish_);
                 finish_ += n;
                 std::copy_backward(position, old_finish - n, old_finish);
                 std::fill(position, position + n, value_copy);
             } else {    
                 /* 分开处理有什么特别的吗? 不理解 */
-                uninitialized_fill_n(finish_, n - elems_after, value_copy);
+                wkangk_stl::uninitialized_fill_n(finish_, n - elems_after, value_copy);
                 finish_ += n - elems_after;
-                uninitialized_copy(position, old_finish, finish_);
+                wkangk_stl::uninitialized_copy(position, old_finish, finish_);
                 finish_ += elems_after;
                 std::fill(position, old_finish, value_copy);
             }
@@ -274,21 +274,21 @@ void vector<T, Alloc>::insert(iterator position, size_type n, const value_type& 
 
             try {
                 /* 拷贝插入前 */
-                new_finish = uninitialized_copy(start_, position, new_start);
+                new_finish = wkangk_stl::uninitialized_copy(start_, position, new_start);
 
                 /* 要插入的数据 */
-                new_finish = uninitialized_fill_n(new_finish, n, value);
+                new_finish = wkangk_stl::uninitialized_fill_n(new_finish, n, value);
 
                 /* 后半部分 */
-                new_finish = uninitialized_copy(position, finish_, new_finish);
+                new_finish = wkangk_stl::uninitialized_copy(position, finish_, new_finish);
             } catch (...) {
-                destroy(new_start, new_finish);
+                wkangk_stl::destroy(new_start, new_finish);
                 data_allocator::deallocate(new_start, len);
                 throw;
             }
 
             /* 删除原来的内存 */
-            destroy(start_, finish_);
+            wkangk_stl::destroy(start_, finish_);
             deallocate();
 
             start_ = new_start;

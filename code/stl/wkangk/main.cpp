@@ -31,6 +31,7 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "multiset.h"
 #include "hash_table.h"
 #include "hash_set.h"
+#include "hash_map.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -394,5 +395,28 @@ int main()
     }
     std::cout << std::endl;
     std::cout << "size: " << ihashset.size() << std::endl;
+
+
+    /* -------------------------------------------------------------------------------
+     * hash_map
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nhash_map<int, int>" << std::endl;
+    hash_map<int, int> ihashmap(10);
+    for (size_t i = 0; i < 20; ++i) {
+        ihashmap.insert({i, i});
+    }
+
+    for (auto& v : ihashmap) {
+        std::cout << v.first << ": " <<  v.second  << "\n";
+    }
+    std::cout << "size: " << ihashmap.size() << std::endl;
+    ihashmap.clear();
+
+    ihashmap.insert({12, 123});
+    ihashmap.insert({32, 13});
+    for (auto& v : ihashmap) {
+        std::cout << v.first << ": " <<  v.second  << "\n";
+    }
+    std::cout << "size: " << ihashmap.size() << std::endl;
     return 0;
 };

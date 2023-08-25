@@ -384,7 +384,7 @@ private:
 
     void delete_node(node* n)
     {
-        destroy(&n->value_);
+        wkangk_stl::destroy(&n->value_);    /* 不是很明白为什么会和标准 stl 起冲突 */
         node_allocator::deallocate(n);
     }
 
