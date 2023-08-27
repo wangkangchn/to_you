@@ -79,8 +79,10 @@ public:
         rep_.resize(n);
     }
 
-public:
-
+    size_type  erase(const value_type& v)
+    {   
+        return rep_.erase(v);
+    }
 
 private:
     ht rep_;

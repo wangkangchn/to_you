@@ -32,6 +32,8 @@ Copyright © wkangk <wangkangchn@163.com>
 #include "hash_table.h"
 #include "hash_set.h"
 #include "hash_map.h"
+#include "hash_multiset.h"
+#include "hash_multimap.h"
 
 
 __USEING_WKANGK_STL_NAMESPACE
@@ -418,5 +420,66 @@ int main()
         std::cout << v.first << ": " <<  v.second  << "\n";
     }
     std::cout << "size: " << ihashmap.size() << std::endl;
+
+    /* -------------------------------------------------------------------------------
+     * hash_multiset
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nhash_multiset<float>" << std::endl;
+    hash_multiset<float> fhashmultiset(10);
+    for (float i = 0; i < 20.f; i += 0.5f) {
+        fhashmultiset.insert(i);
+        fhashmultiset.insert(i);        /* 允许重复插入的 */
+    }
+
+    for (auto& v : fhashmultiset) {
+        std::cout << v  << " ";
+    }
+
+    std::cout << std::endl;
+    std::cout << "size: " << fhashmultiset.size() << std::endl;
+    
+    fhashmultiset.erase(10.f);
+    fhashmultiset.erase(10.f);
+    std::cout << "删除 10.f 后大小: " << fhashmultiset.size() << std::endl;
+    
+    fhashmultiset.clear();
+
+    fhashmultiset.insert(123);
+    fhashmultiset.insert(13);
+    for (auto& v : fhashmultiset) {
+        std::cout << v  << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "size: " << fhashmultiset.size() << std::endl;
+
+
+
+    /* -------------------------------------------------------------------------------
+     * hash_map
+     * ------------------------------------------------------------------------------- */
+    std::cout << "\n\nhash_multimap<float, std::string>" << std::endl;
+    hash_multimap<float, std::string, std::hash<float>, equal_to<float>> fshash_multimap(10);
+    for (float i = 0; i < 20; i += 0.8) {
+        fshash_multimap.insert({i, std::to_string(i)});
+        fshash_multimap.insert({i, std::to_string(i)});
+    }
+
+    for (auto& v : fshash_multimap) {
+        std::cout << v.first << ": " <<  v.second  << "\n";
+    }
+    std::cout << "size: " << fshash_multimap.size() << std::endl;
+    fshash_multimap.erase(4.f);
+    fshash_multimap.erase(10.f);
+    std::cout << "删除 10.f 后大小: " << fshash_multimap.size() << std::endl;
+    std::cout << "fshash_multimap.count(4.f): " << fshash_multimap.count(4.f) << std::endl;
+    fshash_multimap.clear();
+
+    fshash_multimap.insert({12, "wknakg"});
+    fshash_multimap.insert({32, ":qiqi"});
+    for (auto& v : fshash_multimap) {
+        std::cout << v.first << ": " <<  v.second  << "\n";
+    }
+    std::cout << "size: " << fshash_multimap.size() << std::endl;
+
     return 0;
 };

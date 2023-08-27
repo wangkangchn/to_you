@@ -261,7 +261,7 @@ public:
         return insert_unique_noresize(value);
     }
 
-    iterator insert_euqal(const value_type& value)
+    iterator insert_equal(const value_type& value)
     {
         resize(num_elements_ + 1);   /* 当已有元素数目比桶数大时, 就重新调整桶, 使数据更加分散 */
         return insert_equal_noresize(value);
@@ -311,6 +311,62 @@ public:
         这也就是为什么 clear 后, 容器容量是不变的!!! */
     }
 
+    /**
+     * @return     删除的元素个数
+     */
+    size_type erase(const key_type& key)
+    {
+        const size_type n = bkt_num_key(key);
+        node* first = buckets_[n];
+        size_type erased = 0;   /* 删除的元素个数 */
+
+        if (first) {
+            node* cur = first;
+            node* next = first->next_;
+            /* 不考虑头部, 直接删后面的, 头部留在后面处理
+            直接处理也也行, 可能会漏掉的情况是, 头就是我们要找的值
+            但是它会先搜后面不是我们的值, 在回头搜 */
+
+            /* 存在相同的话仅会在一个链表中 */
+            while (next) {
+                if (equals_(get_key_(next->value_), key)) {
+                    cur->next_ = next->next_;   /* next 是相同的, 就删掉 */
+                    delete_node(next);
+                    next = cur->next_;
+                    ++erased;
+                    --num_elements_;
+                } else {
+                    cur = next;
+                    next = cur->next_;  /* oooo 对对对对, 因为这里只是找到了桶号, 
+                                        hash 值相等的, 并不是全部都是一样的值
+                                        所以这里要一直找! */
+                }
+            }
+
+            if (equals_(get_key_(first->value_), key)) {
+                buckets_[n] = first->next_;     /* 删除头部的话, 要进行一次调整 */
+                delete_node(first);
+                ++erased;
+                --num_elements_;
+            }
+        }/* 不存在时是直接返回 0 */
+
+        return erased;
+    }
+
+    size_type count(const key_type& key) const
+    {
+        const size_type n = bkt_num_key(key);
+        size_type result = 0;
+
+        for (const node* cur = buckets_[n]; cur; cur = cur->next_) {
+            if (equals_(get_key_(cur->value_), key)) {
+                ++result;
+            }
+        }
+        return result;
+    }
+
 private:
     /* 允许插入相同键的数据 */
     iterator insert_equal_noresize(const value_type& value)
@@ -319,7 +375,7 @@ private:
         node* first = buckets_[n];
 
         for (node* cur = first; cur; cur = cur->next_) {
-            if (equals_(get_key_(cur->value_), get_key(value))) {       /* 比较 key, 看是不是一样, 一样就说明冲突了, 直接返回 */
+            if (equals_(get_key_(cur->value_), get_key_(value))) {       /* 比较 key, 看是不是一样, 一样就说明冲突了, 直接返回 */
                 /* 存在重复, 插入原有元素之前 */
                 node* tmp = new_node(value);
                 tmp->next_ = cur->next_;

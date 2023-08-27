@@ -21,7 +21,11 @@ Copyright © wkangk <wangkangchn@163.com>
 
 __WKANGK_STL_BEGIN_NAMESPACE
 
+/* 这几个函数在 std 中是全局的! 不是在 std 空间中的, 所以使用的时候要注意
+不使用命名空间限制的话, 就会出现命名冲突的问题!!!
+应该是新版的中这几个是全局的, 但是老版中仍是在 std 命名空间中的
 
+c++20 编译的时候就冲突, 但是 11 就不会, 应该就是哪里给放开命名空间了 */
 /* 这个地方只右一个参数吗? 不应该使用可变参数模板??? */
 template <typename Class, typename T>
 inline void construct(Class* cla, const T& value)

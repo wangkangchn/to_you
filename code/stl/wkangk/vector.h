@@ -68,7 +68,8 @@ public:
 
     ~vector()
     {
-        wkangk_stl::destroy(start_, finish_);   /* 先析构 */
+        // wkangk_stl::destroy(start_, finish_);   /* 先析构 */
+        destroy(start_, finish_);   /* 先析构 */
         deallocate();               /* 再释放内存 */
     }
 
