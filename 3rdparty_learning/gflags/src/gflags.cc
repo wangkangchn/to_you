@@ -186,7 +186,7 @@ static void ReportError(DieWhenReporting should_die, const char* format, ...) {
 //    functionality is to convert from a string to an object of a
 //    given type, and back.  Thread-compatible.
 // --------------------------------------------------------------------
-/* 
+/*
   FlagValue 代表单个 flag 可能具有的值
   那扩展, 应该也得在这添加
   就是将字符串数值转换为一个给定的类型. wocao! 这不就是我一直想要的吗???
@@ -208,9 +208,9 @@ class FlagValue {
 
   /**
    *  ooo 具体类型是从 DEFINE_xxx 中定义的, 害, 有些不太一样了哈哈
-   * 
+   *
    * @param [in]  valbuf  存储的类型值的指针
-   * @param [in]  transfer_ownership_of_value 应该适合 terrace automem 中的一样表示是否要独占该值的所有权. 释放的时候, 有所有权才可以释放, 没有所有权就不能释放, 只当做引 
+   * @param [in]  transfer_ownership_of_value 应该适合 terrace automem 中的一样表示是否要独占该值的所有权. 释放的时候, 有所有权才可以释放, 没有所有权就不能释放, 只当做引
    */
   template <typename FlagType>
   FlagValue(FlagType* valbuf, bool transfer_ownership_of_value);
@@ -310,7 +310,12 @@ FlagValue::~FlagValue() {
 }
 
 
-/* 解析命令行参数, 保存传入的值 */
+/**
+ *     解析传入的命令行参数, 能成功解析就保存传入的值, 不能解析就返回 false
+ *
+ * @param [in]  value   待解析的值
+ * @return     true 成功解析, false 解析失败
+ */
 bool FlagValue::ParseFrom(const char* value) {
   /* ooo 对于格式解析, 也是使用了 switch if else 的方式.
   我有些钻牛角尖了, switch if else 存在即合理, 完全消灭才是邪道
@@ -403,7 +408,7 @@ string FlagValue::ToString() const {
   char intbuf[64];    // enough to hold even the biggest number
   switch (type_) {
     case FV_BOOL:
-      // 判断当前缓冲区存的值是什么 以 true 和 false 为返回值 
+      // 判断当前缓冲区存的值是什么 以 true 和 false 为返回值
       // *reinterpret_cast<bool*>(value_buffer_)
       return VALUE_AS(bool) ? "true" : "false";
     case FV_INT32:
@@ -434,7 +439,7 @@ string FlagValue::ToString() const {
 
 /* typedef bool (*ValidateFnProto)();
 哎哟哟哟, 可以将一个函数指针从一个指针强转到另一个, 可以啊
-reinterpret_cast 果然强大, 没有它不能转的!!! 可以可以, 可以考虑考虑 
+reinterpret_cast 果然强大, 没有它不能转的!!! 可以可以, 可以考虑考虑
 validate_fn_proto 应该是用户传过来的, 后面再看看
 验证传入的值是不是符合用户的要求
 */
@@ -523,7 +528,7 @@ FlagValue* FlagValue::New() const {
   }
 }
 
-/* 
+/*
   就是 operator= 或者 拷贝构造, 只不过这里使用成员方法的方式进行了替代
  */
 void FlagValue::CopyFrom(const FlagValue& x) {
@@ -550,9 +555,9 @@ void FlagValue::CopyFrom(const FlagValue& x) {
 //    should acquire the FlagRegistry lock for the registry that owns
 //    this flag.
 // --------------------------------------------------------------------
-/* 
+/*
   FlagValue 只存值, 而 CommandLineFlag 就是将整个用户定义的标记转为定义的这个类
-  这样就将外部的输入统一起来的. 
+  这样就将外部的输入统一起来的.
   对就应该是这样, 外部的输入一定要封装到我们自己的类中, 更好地控制, 而不要东一个西一点
   FlagRegistry 应该就是一个单例, 一个全局注册表
   修改的话要拿到这个标记的锁? 在注册表中是为每个标记都搞了一锁码? 研究研究
@@ -643,7 +648,7 @@ const char* CommandLineFlag::CleanFileName() const {
 
 /**
  *  将命令行参数保存到  CommandLineFlagInfo  中
- * 
+ *
  * @param [out] result    处理好的命令行参数
  */
 void CommandLineFlag::FillCommandLineFlagInfo(
@@ -654,7 +659,7 @@ void CommandLineFlag::FillCommandLineFlagInfo(
   result->current_value = current_value();
   result->default_value = default_value();
   result->filename = CleanFileName();
-  UpdateModifiedBit();  
+  UpdateModifiedBit();
   result->is_default = !modified_;  /* 如果进行了一次修改, modified_ 就会是 true */
   result->has_validator_fn = validate_function() != NULL;
   result->flag_ptr = flag_ptr();    /* 这个是具体的当前值 */
@@ -662,7 +667,7 @@ void CommandLineFlag::FillCommandLineFlagInfo(
 
 /**
  *     更新 modified_ 的状态
- * 
+ *
  *  就是为了防止直接使用 FLAGS_name 这种方式修改变量, 怎么防止的?
  */
 void CommandLineFlag::UpdateModifiedBit() {
@@ -718,15 +723,24 @@ struct StringCmp {  // Used by the FlagRegistry map class to compare char*'s
 };
 
 
-/* 这个是注册表, 也是一个单例, 为啥不把构造私有? */
+/**
+ *     这个是注册表, 提供下面一些功能:
+ *  (1) 进行 Flag 的注册
+ *  (2) 解析命令行传入的参数, 并将其存储到已有的 CommandLineFlag 中
+ *
+ * @param [in]  
+ * @param [out] 
+ * @return     无
+ */
 class FlagRegistry {
  public:
-  /* 这样防止不了用户通过默认构造来定义对象, 应该 gflags 最开始的时候还没有 c++11, delete default 都还没出来 */
+  /* 这样防止不了用户通过默认构造来定义对象, 应该 gflags 最开始的时候还没有 c++11, delete default 都还没出来. 对应该就是还没有 11. 第一版 gflags 是 2008 年的, 11 标准还得几年 */
   FlagRegistry() {
   }
   ~FlagRegistry() {
     // Not using STLDeleteElements as that resides in util and this
     // class is base.
+    // 可以把 end() 放到初始化中, 这样就不用每次都再调用一次
     for (FlagMap::iterator p = flags_.begin(), e = flags_.end(); p != e; ++p) {
       CommandLineFlag* flag = p->second;
       delete flag;
@@ -778,11 +792,13 @@ class FlagRegistry {
   typedef map<const char*, CommandLineFlag*, StringCmp> FlagMap;
   typedef FlagMap::iterator FlagIterator;
   typedef FlagMap::const_iterator FlagConstIterator;
-  FlagMap flags_;
+  FlagMap flags_;   /* 和我搞的差不多, 都是 map, 只不过我更喜欢 unordered_map
+                      因为注册只需要注册一次, 不会进行大量检索, map 空间更小一些 */
+                    /*!< 存储 Flag 名字和 CommandLineFlag* */
 
   // The map from current-value pointer to flag, fo FindFlagViaPtrLocked().
   typedef map<const void*, CommandLineFlag*> FlagPtrMap;
-  FlagPtrMap flags_by_ptr_;
+  FlagPtrMap flags_by_ptr_; /* 再存储一个由值找到 Flag 对象的映射 */
 
   static FlagRegistry* global_registry_;   // a singleton registry
 
@@ -805,12 +821,18 @@ class FlagRegistryLock {
   FlagRegistry *const fr_;
 };
 
-
+/**
+ *     将一个命令行参数, 注册到注册表中, 注册就是将相应的对象保存到
+ * map 中的过程
+ *  线程安全
+ * @param [in]  flag    待注册 flag
+ */
 void FlagRegistry::RegisterFlag(CommandLineFlag* flag) {
-  Lock();
+  Lock(); /* 保证线程安全 */
   pair<FlagIterator, bool> ins =
     flags_.insert(pair<const char*, CommandLineFlag*>(flag->name(), flag));
   if (ins.second == false) {   // means the name was already in the map
+    /* 重复插入, 不同文件中, 也只允许有一个 Flag, 所有 Flag 的名字必须唯一!!! */
     if (strcmp(ins.first->second->filename(), flag->filename()) != 0) {
       ReportError(DIE, "ERROR: flag '%s' was defined more than once "
                   "(in files '%s' and '%s').\n",
@@ -830,11 +852,18 @@ void FlagRegistry::RegisterFlag(CommandLineFlag* flag) {
   Unlock();
 }
 
+/**
+ *     在有锁的前提下, 通过名字获取 Flag 对象指针
+ *
+ * @param [in]  name    待获取 flag 的名字
+ * @return     Flag 对象指针
+ */
 CommandLineFlag* FlagRegistry::FindFlagLocked(const char* name) {
   FlagConstIterator i = flags_.find(name);
   if (i == flags_.end()) {
     // If the name has dashes in it, try again after replacing with
     // underscores.
+    // 为什么有 - 要替换为 _ 再试一次. 存储的时候统一会将 - 变为 _ 吗? 没发现哇
     if (strchr(name, '-') == NULL) return NULL;
     string name_rep = name;
     std::replace(name_rep.begin(), name_rep.end(), '-', '_');
@@ -844,6 +873,12 @@ CommandLineFlag* FlagRegistry::FindFlagLocked(const char* name) {
   }
 }
 
+/**
+ *     同 FindFlagLocked 功能类似, 只不过这个是通过值来找到 Flag 对象指针
+ *  flags_by_ptr_ <void*, CommandLineFlag>
+ * @param [in]  flag_ptr    flag 值
+ * @return     对应的 CommandLineFlag 指针
+ */
 CommandLineFlag* FlagRegistry::FindFlagViaPtrLocked(const void* flag_ptr) {
   FlagPtrMap::const_iterator i = flags_by_ptr_.find(flag_ptr);
   if (i == flags_by_ptr_.end()) {
@@ -853,43 +888,66 @@ CommandLineFlag* FlagRegistry::FindFlagViaPtrLocked(const void* flag_ptr) {
   }
 }
 
+/**
+ *     看名字是分割字符串
+ * 这个应该是将 命令行 的传参, 一个一个进行解析, 解析一个就跳过一个
+ *
+ *  分离出 flag 名字之后, 先检查注册表中是否有, 有就获取值
+ *  如果解析的名字不存在在注册表中, 就检查这个名字是不是 noxxx 的形式
+ *  若果是, 再看一看是不是 bool 类型, gflag 允许 noxxx 的形式作为 bool 标记
+ *  的否! noxxx 仅支持 bool 标记
+ *
+ * @param [in]   arg    还剩下的参数
+ * @param [out]  key    解析得到的 flag 名字
+ * @param [out]  v      解析得到传入的 flag 值
+ * @param [out]  error_message   存在的错误信息
+ * @return     注册表中如果存在该 flag, 就将相应的 flag 对象拿出来
+ */
 CommandLineFlag* FlagRegistry::SplitArgumentLocked(const char* arg,
                                                    string* key,
                                                    const char** v,
                                                    string* error_message) {
   // Find the flag object for this option
   const char* flag_name;
-  const char* value = strchr(arg, '=');
-  if (value == NULL) {
-    key->assign(arg);
+  const char* value = strchr(arg, '='); /* 为在一个串中查找给定字符的第一个匹配之处 */
+  if (value == NULL) {  /* 可以使用 = 也可以不使用 = 进行赋值 */
+    key->assign(arg);   /* 没有 = 获得的是什么就是什么 */
     *v = NULL;
   } else {
     // Strip out the "=value" portion from arg
-    key->assign(arg, value-arg);
-    *v = ++value;    // advance past the '='
+    key->assign(arg, value-arg);  /* 有等号, 就将等号左侧赋给 key, 右侧给 value */
+    *v = ++value;    // advance past the '='  去掉 =
   }
   flag_name = key->c_str();
 
   CommandLineFlag* flag = FindFlagLocked(flag_name);
 
   if (flag == NULL) {
+    /* 没有找到的话, 就返回错误信息, 下面这一段代码就是在整理错误信息 */
     // If we can't find the flag-name, then we should return an error.
     // The one exception is if 1) the flag-name is 'nox', 2) there
     // exists a flag named 'x', and 3) 'x' is a boolean flag.
     // In that case, we want to return flag 'x'.
+
+    /* 这里就看出来了, 允许传入一个 noxxx 的标记, 作为 xxx 标记的反 */
     if (!(flag_name[0] == 'n' && flag_name[1] == 'o')) {
       // flag-name is not 'nox', so we're not in the exception case.
       *error_message = StringPrintf("%sunknown command line flag '%s'\n",
                                     kError, key->c_str());
       return NULL;
     }
+
+    /* 到这里就是找到了一个 noxxx 标记 */
     flag = FindFlagLocked(flag_name+2);
     if (flag == NULL) {
+      /* 去掉 no 的话要是还没找到, 就是真的没有了 */
       // No flag named 'x' exists, so we're not in the exception case.
       *error_message = StringPrintf("%sunknown command line flag '%s'\n",
                                     kError, key->c_str());
       return NULL;
     }
+
+    /* 哦吼, noxxx 标记只允许在 bool 值的情况下使用!!! */
     if (flag->Type() != FlagValue::FV_BOOL) {
       // 'x' exists but is not boolean, so we're not in the exception case.
       *error_message = StringPrintf(
@@ -911,11 +969,25 @@ CommandLineFlag* FlagRegistry::SplitArgumentLocked(const char* arg,
   return flag;
 }
 
+/**
+ *     将获得的命令行参数进行解析, 看传入的值能不能解析为定义时指定的类型,
+ * 如同能解析, 还会接着使用用户传入的校验函数校验参数的数值范围. 不能解析就会返回
+ * 相关错误信息
+ *
+ *    校验数据类型  校验数据范围
+ *
+ * @param [in]  flag            包装好的命令行参数
+ * @param [in out]  flag_value  解析成功的 flag 值
+ * @param [in]  value           待解析的命令行参数
+ * @param [in]  msg             保存相关信息
+ * @return     true 能正常解析, false 不能正常解析
+ */
 bool TryParseLocked(const CommandLineFlag* flag, FlagValue* flag_value,
                     const char* value, string* msg) {
   // Use tenative_value, not flag_value, until we know value is valid.
+  /*  从一个随机值开始, 直到找到一个确定的值, 可以看做是一个临时变量 */
   FlagValue* tentative_value = flag_value->New();
-  if (!tentative_value->ParseFrom(value)) {
+  if (!tentative_value->ParseFrom(value)) { /* 不能解析的就返回错误信息 */
     if (msg) {
       StringAppendF(msg,
                     "%sillegal value '%s' specified for %s flag '%s'\n",
@@ -924,7 +996,10 @@ bool TryParseLocked(const CommandLineFlag* flag, FlagValue* flag_value,
     }
     delete tentative_value;
     return false;
-  } else if (!flag->Validate(*tentative_value)) {
+
+  /* 如果有用户传入的校验函数, 会对传入值进行一次校验, 输入不对仍然会报错,
+  这个校验函数可以搞一搞 */
+  } else if (!flag->Validate(*tentative_value)) { /* 同样, 如果校验函数失败, 就返回错误信息 */
     if (msg) {
       StringAppendF(msg,
           "%sfailed validation of new value '%s' for flag '%s'\n",
@@ -934,6 +1009,7 @@ bool TryParseLocked(const CommandLineFlag* flag, FlagValue* flag_value,
     delete tentative_value;
     return false;
   } else {
+    /* 一切 ok, 能解析为指定类型, 就把解析得到的数据保存到 flag_value 中 */
     flag_value->CopyFrom(*tentative_value);
     if (msg) {
       StringAppendF(msg, "%s set to %s\n",
@@ -944,22 +1020,32 @@ bool TryParseLocked(const CommandLineFlag* flag, FlagValue* flag_value,
   }
 }
 
+/**
+ *  按照指定的设置模式进行值的设置
+ *  
+ * @param [in out]  flag      命令行 Flag 对象
+ * @param [in]      value     命令行传入的参数
+ * @param [in]      set_mode  设置值的模式
+ * @param [in]      msg       保存相关信息
+ * @return     true 成功设置, false 设置失败
+ */
 bool FlagRegistry::SetFlagLocked(CommandLineFlag* flag,
                                  const char* value,
                                  FlagSettingMode set_mode,
                                  string* msg) {
-  flag->UpdateModifiedBit();
+  flag->UpdateModifiedBit();  /* 要设置 flag 的值了, 肯定是要进行修改 */
   switch (set_mode) {
-    case SET_FLAGS_VALUE: {
+    /* o FlagSettingMode 这个枚举的作用好像就是设置不同情况下, 进行更新 */
+    case SET_FLAGS_VALUE: {   /* 正常修改值, 无论什么情况下都会正常gengxin */
       // set or modify the flag's value
       if (!TryParseLocked(flag, flag->current_, value, msg))
         return false;
-      flag->modified_ = true;
+      flag->modified_ = true;   /* 标记值被修改过 */
       break;
     }
     case SET_FLAG_IF_DEFAULT: {
       // set the flag's value, but only if it hasn't been set by someone else
-      if (!flag->modified_) {
+      if (!flag->modified_) {   /* 当没有被修改过时, 才会进行值的设定 */
         if (!TryParseLocked(flag, flag->current_, value, msg))
           return false;
         flag->modified_ = true;
@@ -970,7 +1056,7 @@ bool FlagRegistry::SetFlagLocked(CommandLineFlag* flag,
       break;
     }
     case SET_FLAGS_DEFAULT: {
-      // modify the flag's default-value
+      // modify the flag's default-value  无论何时都会设置为默认值
       if (!TryParseLocked(flag, flag->defvalue_, value, msg))
         return false;
       if (!flag->modified_) {
@@ -1514,6 +1600,9 @@ bool AddFlagValidator(const void* flag_ptr, ValidateFnProto validate_fn_proto) {
 //    values in a global destructor.
 // --------------------------------------------------------------------
 
+/* 匿名命名空间, 这就完全对外屏蔽了 RegisterCommandLineFlag 这个方法
+也可以考虑使用匿名空间解决变量重命名的问题, 可以可以!!!
+上面这个办法不行哦, 试了一下, 匿名空间也是一个空间, 所有匿名空间中的东西都是一个空间里的, 所以也不能存在命名冲突问题! */
 namespace {
 
 /* 进行标记的注册 */
@@ -1525,8 +1614,11 @@ void RegisterCommandLineFlag(const char* name,
   if (help == NULL)
     help = "";
   // Importantly, flag_ will never be deleted, so storage is always good.
+  /* 创建一个空间用来存储定义的标记 */
   CommandLineFlag* flag =
       new CommandLineFlag(name, help, filename, current, defvalue);
+  /* 将标记注册到注册表中, 这里注册时, 并没有实际值, 仅仅是默认值, 和分配的空间
+  一切都是在 static 时指定的 */
   FlagRegistry::GlobalRegistry()->RegisterFlag(flag);  // default registry
 }
 }
@@ -1536,7 +1628,7 @@ FlagRegisterer::FlagRegisterer(const char* name,
                                const char* help,
                                const char* filename,
                                FlagType* current_storage,
-                               FlagType* defvalue_storage) 
+                               FlagType* defvalue_storage)
 {
   FlagValue* const current = new FlagValue(current_storage, false);
   FlagValue* const defvalue = new FlagValue(defvalue_storage, false);

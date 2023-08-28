@@ -236,14 +236,14 @@ extern GFLAGS_DLL_DECL CommandLineFlagInfo GetCommandLineFlagInfoOrDie(const cha
 
 enum FlagSettingMode {
   // update the flag's value (can call this multiple times).
-  SET_FLAGS_VALUE,
+  SET_FLAGS_VALUE,  /* 无论什么情况下都设置为指定的值 */
   // update the flag's value, but *only if* it has not yet been updated
   // with SET_FLAGS_VALUE, SET_FLAG_IF_DEFAULT, or "FLAGS_xxx = nondef".
-  SET_FLAG_IF_DEFAULT,
+  SET_FLAG_IF_DEFAULT,  /* flag->modified_ 为 false 时, 进行更新  */
   // set the flag's default value to this.  If the flag has not yet updated
   // yet (via SET_FLAGS_VALUE, SET_FLAG_IF_DEFAULT, or "FLAGS_xxx = nondef")
   // change the flag's current value to the new default value as well.
-  SET_FLAGS_DEFAULT
+  SET_FLAGS_DEFAULT   /* 无论什么情况下都会将指定的值设置为 默认值, 而使 flag->modified_ 进行当前值的更新*/
 };
 
 // Set a particular flag ("command line option").  Returns a string
