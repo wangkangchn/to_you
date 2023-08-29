@@ -20,7 +20,7 @@ DEFINE_int32(batch, 1, "batch 数");
 /* 日志相关 */
 DEFINE_string(log_fn, "./logs/logger.log", "待输出的日志文件");
 DEFINE_string(log_level, "info", "日志输出的等级, 默认 INFO, 可选 [debug|info|warn|error]");
-DEFINE_string(image, "../../../../images/c060342e-174e-11ed-ba71-5b707e07e69c.jpg", "image path");
+DEFINE_string(image, "../../../../images/c060342e-174e-11ed-ba71-5b707e07e69c.jpg", "image path true");
 DEFINE_string(video_url, "../../../../video/vlc-record-2022-09-02-08h37m42s-test.mp4-.mp4", "video url");
 
 DEFINE_bool(memory_leak, false, "是否开启内存泄漏检查");

@@ -898,8 +898,8 @@ CommandLineFlag* FlagRegistry::FindFlagViaPtrLocked(const void* flag_ptr) {
  *  的否! noxxx 仅支持 bool 标记
  *
  * @param [in]   arg    还剩下的参数
- * @param [out]  key    解析得到的 flag 名字
- * @param [out]  v      解析得到传入的 flag 值
+ * @param [out]  key    解析得到的 flag 名字, 没匹配到就保存原值
+ * @param [out]  v      解析得到传入的 flag 值, 可能返回 NULL, 说明当前参数中没有 =
  * @param [out]  error_message   存在的错误信息
  * @return     注册表中如果存在该 flag, 就将相应的 flag 对象拿出来
  */
@@ -1105,7 +1105,18 @@ FlagRegistry* FlagRegistry::GlobalRegistry() {
 //       This is a bit of a simplification.  For instance, --flagfile
 //    is handled as soon as it's seen in stage 1, not in stage 2.
 // --------------------------------------------------------------------
-
+/**
+ *     命令行解析器
+ * 用户定义的 Flag 有了(统统注册到了 FalgRegistry)
+ * 用户传入的参数也有了(统统保存到了 static 中)
+ *    有了上面这两个, 就可以进行真正的解析了. 将插入的值保留到对应设置的 Flag 当中
+ * 
+ * 上面说这个解析分两个阶段:
+ *  1. 能解析的就直接保存, 不能解析的就转存到一个 vector 中, 并附带一个解析信息
+ *  2. 处理类似 Help 等的报告 Flag
+ *  3. 输出错误信息(可选的)
+ * 
+ */
 class CommandLineFlagParser {
  public:
   // The argument is the flag-registry to register the parsed flags in
@@ -1210,47 +1221,65 @@ static string ReadFileIntoString(const char* filename) {
   return s;
 }
 
+/**
+ *     解析命令行参数, 并将解析到的值传入到注册好的 flag 中进行保存
+ *
+ * @param [in]  argc            参数个数
+ * @param [in]  argv            具体参数
+ * @param [in]  remove_flags    咱不明白
+ * @return     无
+ */
 uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
                                                        bool remove_flags) {
   int first_nonopt = *argc;        // for non-options moved to the end
 
   registry_->Lock();
-  for (int i = 1; i < first_nonopt; i++) {
+  for (int i = 1; i < first_nonopt; i++) {  // 不考虑程序名, 仅考虑参数
     char* arg = (*argv)[i];
 
+    /* 将没有选项标记 -/-- 的选项, 一个一个的移动到参数的后面 */
     // Like getopt(), we permute non-option flags to be at the end.
     if (arg[0] != '-' || arg[1] == '\0') {	// must be a program argument: "-" is an argument, not a flag
+      /* 由src所指内存区域复制count个字节到dest所指内存区域。 */
+      /* 调整了二维数组中的元素顺序, 将当前到最后的元素统一向前移动一个位置 */
       memmove((*argv) + i, (*argv) + i+1, (*argc - (i+1)) * sizeof((*argv)[i]));
-      (*argv)[*argc-1] = arg;      // we go last
+      (*argv)[*argc-1] = arg;      // we go last  当前的参数放在最后
       first_nonopt--;              // we've been pushed onto the stack
       i--;                         // to undo the i++ in the loop
       continue;
     }
-    arg++;                     // skip leading '-'
-    if (arg[0] == '-') arg++;  // or leading '--'
+    arg++;                     // skip leading '-'  原先 arg 是 -, 再 ++ 一次就到了 -- 中的第二个
+    if (arg[0] == '-') arg++;  // or leading '--'   也就是这里, 这里就可以很好的去掉 - 和 -- 的问题
+                                // 如果我做, 我会用掉太多的函数库, 并不高效, 这种一点一点字节的处理
+                                // 应该好好学习
 
     // -- alone means what it does for GNU: stop options parsing
+    // o 单独 - / -- 意味着结束?
     if (*arg == '\0') {
       first_nonopt = i+1;
       break;
     }
 
     // Find the flag object for this option
-    string key;
-    const char* value;
+    string key;           /* 保存匹配上的 key 值, 没匹配到就保存 */
+    const char* value;    /* 保存取得的命令行参数值 */
     string error_message;
+
+    /* arg 就是传入的一个命令行参数 */
     CommandLineFlag* flag = registry_->SplitArgumentLocked(arg, &key, &value,
                                                            &error_message);
-    if (flag == NULL) {
+    if (flag == NULL) {   /* 传入的标记是没有注册过的, 就跳过 */
       undefined_names_[key] = "";    // value isn't actually used
       error_flags_[key] = error_message;
       continue;
     }
 
-    if (value == NULL) {
+    if (value == NULL) {  /* value == NULL 说明, 当前 arg 中没有 = 号, 要另做处理 */
       // Boolean options are always assigned a value by SplitArgumentLocked()
-      assert(flag->Type() != FlagValue::FV_BOOL);
-      if (i+1 >= first_nonopt) {
+      /* 应该不会是 bool 类型, 因为 SplitArgumentLocked 会对 bool 类型赋值
+      这里也能看出来, gflags 是支持仅传入 bool 标记而不用值的 */
+      assert(flag->Type() != FlagValue::FV_BOOL); 
+      if (i+1 >= first_nonopt) {  /* 说明后面已经没有参数了, 这就说明 - 标记的这个东西是为赋值的, 毕竟能在注册表中匹配到, 就说明传递的参数是正确的, 只不过没有赋值而已 */
         // This flag needs a value, but there is nothing available
         error_flags_[key] = (string(kError) + "flag '" + (*argv)[i] + "'"
                              + " is missing its argument");
@@ -1261,10 +1290,11 @@ uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
         error_flags_[key] += "\n";
         break;    // we treat this as an unrecoverable error
       } else {
+        /* 没有 = 但是后面还有参数, 就继续向后面读一项 */
         value = (*argv)[++i];                   // read next arg for value
 
         // Heuristic to detect the case where someone treats a string arg
-        // like a bool:
+        // like a bool: 启发式检测某人将字符串参数视为bool类型的情况:
         // --my_string_var --foo=bar
         // We look for a flag of string type, whose value begins with a
         // dash, and where the flag-name and value are separated by a
@@ -1273,12 +1303,18 @@ uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
         // or "false" in the help string.  Without this, a valid usage
         // "-lat -30.5" would trigger the warning.  The common cases we
         // want to solve talk about true and false as values.
+        // 特别处理的就是在使用空格进行分隔时, 并且接收一个字符串, 而后面一个是以 - 开头的
+        // 要解决的就是后面这个 - 是真正所需要的, 还是是另一个标记的开始
+        // 只有当前标记接收的是 string, 才会这个问题.
+        // 使用层名帮助解决这个问题的办法是, 传递的时候使用 "" 将字符串包裹起来
+        // 一定会有 true 和 false 吗? 不一定吧, 对就因为不一定, 可能有人会将 string
+        // 标记像 bool 标记一样使用, 这里就会做一个提醒
         if (value[0] == '-'
             && flag->Type() == FlagValue::FV_STRING
-            && (strstr(flag->help(), "true")
+            && (strstr(flag->help(), "true")    
                 || strstr(flag->help(), "false"))) {
           LOG(WARNING) << "Did you really mean to set flag '"
-                       << flag->name() << "' to the value '"
+                       << flag->name() << "' to the value '"  
                        << value << "'?";
         }
       }
@@ -1361,6 +1397,14 @@ string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
   return msg;
 }
 
+/**
+ *  将参数值按照指定的模式写入到 flag 中
+ *
+ * @param [in]  flag      需要写入的 flag
+ * @param [in]  value     待写入的值
+ * @param [in]  set_mode  写入模式
+ * @return     错误信息
+ */
 string CommandLineFlagParser::ProcessSingleOptionLocked(
     CommandLineFlag* flag, const char* value, FlagSettingMode set_mode) {
   string msg;
@@ -1587,6 +1631,8 @@ bool AddFlagValidator(const void* flag_ptr, ValidateFnProto validate_fn_proto) {
 }  // end unnamed namespaces
 
 
+// 注册相关
+
 // Now define the functions that are exported via the .h file
 
 // --------------------------------------------------------------------
@@ -1700,25 +1746,33 @@ void GetAllFlags(vector<CommandLineFlagInfo>* OUTPUT) {
 
 // These values are not protected by a Mutex because they are normally
 // set only once during program startup.
-static string argv0("UNKNOWN");  // just the program name
-static string cmdline;           // the entire command-line
-static string program_usage;
-static vector<string> argvs;
-static uint32 argv_sum = 0;
+static string argv0("UNKNOWN");  // just the program name 程序名
+static string cmdline;           // the entire command-line 保留完整的命令行参数, 就是将原先的 argv 变成单一的 string 进行保存
+static string program_usage;      // 这个应该是用户传入的信息
+static vector<string> argvs;      // 这个是保留单独的一个个的命令行参数
+static uint32 argv_sum = 0;       // 计算了 cmdline 所有字符的 ASCII 码的和
 
+/**
+ *  将 argv 传入的参数拷贝成一整份和一个零散的 vector.
+ * 就是上面的 static 变量
+ *
+ * @param [in]  argc    命令行参数个数
+ * @param [in]  argv    命令行参数
+ * @return     无
+ */
 void SetArgv(int argc, const char** argv) {
   static bool called_set_argv = false;
-  if (called_set_argv) return;
+  if (called_set_argv) return;      /* 防止重复设置参数 */
   called_set_argv = true;
 
   assert(argc > 0); // every program has at least a name
-  argv0 = argv[0];
+  argv0 = argv[0];                  /* 一个参数是程序名 */
 
-  cmdline.clear();
+  cmdline.clear();                  
   for (int i = 0; i < argc; i++) {
-    if (i != 0) cmdline += " ";
-    cmdline += argv[i];
-    argvs.push_back(argv[i]);
+    if (i != 0) cmdline += " ";     /* 丢弃程序名 */
+    cmdline += argv[i];             /* 没有空格的都拼起来 */
+    argvs.push_back(argv[i]);       
   }
 
   // Compute a simple sum of all the chars in argv
@@ -1726,6 +1780,7 @@ void SetArgv(int argc, const char** argv) {
   for (string::const_iterator c = cmdline.begin(); c != cmdline.end(); ++c) {
     argv_sum += *c;
   }
+  /* 为啥要计算字符的和??? */
 }
 
 const vector<string>& GetArgvs() { return argvs; }
@@ -1735,6 +1790,11 @@ uint32 GetArgvSum()              { return argv_sum; }
 const char* ProgramInvocationName() {             // like the GNU libc fn
   return GetArgv0();
 }
+
+/**
+ *     去除程序名中, 第一个 / 之前的内容
+ * @return     无
+ */
 const char* ProgramInvocationShortName() {        // like the GNU libc fn
   size_t pos = argv0.rfind('/');
 #ifdef OS_WINDOWS
@@ -1743,6 +1803,8 @@ const char* ProgramInvocationShortName() {        // like the GNU libc fn
   return (pos == string::npos ? argv0.c_str() : (argv0.c_str() + pos + 1));
 }
 
+
+// 允许用户设置使用信息
 void SetUsageMessage(const string& usage) {
   program_usage = usage;
 }
@@ -1759,6 +1821,7 @@ const char* ProgramUsage() {
 // VersionString()
 // --------------------------------------------------------------------
 
+// 允许用户设置版本信息
 static string version_string;
 
 void SetVersionString(const string& version) {
@@ -2127,6 +2190,7 @@ static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
                                             bool remove_flags, bool do_report) {
   SetArgv(*argc, const_cast<const char**>(*argv));    // save it for later
 
+  /* 在解析参数之前, 所有用户定义的 Flag 都通过 static 的方式注册到了 FalgRegistry 之中 */
   FlagRegistry* const registry = FlagRegistry::GlobalRegistry();
   CommandLineFlagParser parser(registry);
 
@@ -2156,6 +2220,14 @@ static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
   return r;
 }
 
+/**
+ *     解析命令行参数
+ *
+ * @param [in]  argc    命令行参数格式
+ * @param [in]  argv    命令行参数
+ * @param [in]  remove_flags  暂不清楚
+ * @return     暂不清楚
+ */
 uint32 ParseCommandLineFlags(int* argc, char*** argv, bool remove_flags) {
   return ParseCommandLineFlagsInternal(argc, argv, remove_flags, true);
 }
