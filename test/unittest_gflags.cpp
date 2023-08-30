@@ -89,11 +89,35 @@ using namespace gflags;
 
 // }
 
+TEST(learing, testGflagsFile)
+{
+    INFO("device_id: {}", FLAGS_device_id);
+    INFO("num_threads: {}", FLAGS_num_threads);
+    INFO("batch: {}", FLAGS_batch);
+    INFO("log_fn: {}", FLAGS_log_fn);
+    // export FLAGS_log_fn=value
+}
+
 int main(int argc, char* argv[])
 {   
     SetVersionString("v1.1");   /* 要在解析之前用 */
-    gflags::ParseCommandLineFlags(&argc, &argv, true); 
+
+    std::cout << "原始\n";
+    std::cout << "argc: " << argc << std::endl;
+    for (int i = 0; i < argc; i++) {
+        std::cout << argv[i] << " ";
+    }
+    std::cout << std::endl;
     
+    std::cout << gflags::ParseCommandLineFlags(&argc, &argv, false) << std::endl; 
+
+    std::cout << "之后\n";
+    std::cout << "argc: " << argc << std::endl;
+    for (int i = 0; i < argc; i++) {
+        std::cout << argv[i] << " ";
+    }
+    std::cout << std::endl;
+
     testing::AddGlobalTestEnvironment(new MyEnvironment);
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

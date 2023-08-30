@@ -1,0 +1,11 @@
+# 下面是 app 的程序的标记
+app
+--device_id=123
+--num_threads=123
+--batch=123
+
+# 下面是 unittest_gflags 的程序的标记, 会找自己程序名的标记的!!! 酷
+unittest_gflags
+--device_id=1238
+--num_threads=1283
+--batch=1283

@@ -1180,6 +1180,13 @@ class CommandLineFlagParser {
 
 
 // Parse a list of (comma-separated) flags.
+/**
+ *     --flagfile 中允许用 "," 来分隔不同的相
+ *
+ * @param [in]  value   --flagfile 传入的值
+ * @param [out] flags   --flagfile 中各项的值 
+ * @return     无
+ */
 static void ParseFlagList(const char* value, vector<string>* flags) {
   for (const char *p = value; p && *p; value = p) {
     p = strchr(value, ',');
@@ -1206,6 +1213,9 @@ static void ParseFlagList(const char* value, vector<string>* flags) {
 // Adds a newline at the end of the file.
 #define PFATAL(s)  do { perror(s); gflags_exitfunc(1); } while (0)
 
+/**
+ *     读取文件内容到字符串
+ */
 static string ReadFileIntoString(const char* filename) {
   const int kBufSize = 8092;
   char buffer[kBufSize];
@@ -1226,8 +1236,8 @@ static string ReadFileIntoString(const char* filename) {
  *
  * @param [in]  argc            参数个数
  * @param [in]  argv            具体参数
- * @param [in]  remove_flags    咱不明白
- * @return     无
+ * @param [in]  remove_flags    是否删除成功解析过的参数
+ * @return     返回能够继续被识别的参数个数, 包含程序名
  */
 uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
                                                        bool remove_flags) {
@@ -1325,6 +1335,7 @@ uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
   }
   registry_->Unlock();
 
+  /* 这一段的作用, 就是表明是否, 将解析过的 flag 都去掉 */
   if (remove_flags) {   // Fix up argc and argv by removing command line flags
     (*argv)[first_nonopt-1] = (*argv)[0];
     (*argv) += (first_nonopt-1);
@@ -1333,10 +1344,16 @@ uint32 CommandLineFlagParser::ParseNewCommandLineFlags(int* argc, char*** argv,
   }
 
   logging_is_probably_set_up = true;   // because we've parsed --logdir, etc.
-
   return first_nonopt;
 }
 
+/**
+ *     允许
+ *
+ * @param [in]  flagval   flagfile 传入的参数
+ * @param [in]  set_mode  写入模式
+ * @return     错误信息
+ */
 string CommandLineFlagParser::ProcessFlagfileLocked(const string& flagval,
                                                     FlagSettingMode set_mode) {
   if (flagval.empty())
@@ -1352,6 +1369,15 @@ string CommandLineFlagParser::ProcessFlagfileLocked(const string& flagval,
   return msg;
 }
 
+/**
+ *     从环境变量中获取所需的标记
+ *
+ * @param [in]  flagval   --fromenv 可以使用 "," 来分隔可以从环境变了中获取值
+ *                          只需要定义的 flag 名字
+ * @param [in]  set_mode  设置 Flag 的模式
+ * @param [in]  errors_are_fatal  标记是否没从环境变量中找到就直接返回错误信息
+ * @return     错误信息
+ */
 string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
                                                    FlagSettingMode set_mode,
                                                    bool errors_are_fatal) {
@@ -1364,6 +1390,7 @@ string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
 
   for (size_t i = 0; i < flaglist.size(); ++i) {
     const char* flagname = flaglist[i].c_str();
+    /* 这里就看出来了是通过名字进行查找的 */
     CommandLineFlag* flag = registry_->FindFlagLocked(flagname);
     if (flag == NULL) {
       error_flags_[flagname] =
@@ -1374,8 +1401,11 @@ string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
       continue;
     }
 
+    /* 这里又是 通过 FLAGS_xxx 的方式从环境变量中取值, 所以
+    设置环境变量的时候要用 FLAGS_xxx, 但是 --fromenv 传递的时候只需要名字 */
     const string envname = string("FLAGS_") + string(flagname);
     string envval;
+    /* 这里就是从环境变量中获取值 */
     if (!SafeGetEnv(envname.c_str(), envval)) {
       if (errors_are_fatal) {
         error_flags_[flagname] = (string(kError) + envname +
@@ -1392,6 +1422,7 @@ string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
       continue;
     }
 
+    /* 递归了 */
     msg += ProcessSingleOptionLocked(flag, envval.c_str(), set_mode);
   }
   return msg;
@@ -1399,6 +1430,9 @@ string CommandLineFlagParser::ProcessFromenvLocked(const string& flagval,
 
 /**
  *  将参数值按照指定的模式写入到 flag 中
+ *  当参数是 flagfile 时, 解析传入的文件, 从文件中继续找
+ *  当参数是 fromenv 时, 从环境变量中找指定的 flag, 如果没有就报错, 不会使用默认值
+ *  当参数是 tryfromenv 时, 从环境变量中找指定的 flag, 如果没有就用默认值
  *
  * @param [in]  flag      需要写入的 flag
  * @param [in]  value     待写入的值
@@ -1413,9 +1447,14 @@ string CommandLineFlagParser::ProcessSingleOptionLocked(
     return "";
   }
 
+  /* 可以通过 --flagfile 传入存储 flag 的文件, 在这个文件中只能一行一个标记的存,
+  并且可以使用程序名作为不同段的分隔 */
   // The recursive flags, --flagfile and --fromenv and --tryfromenv,
   // must be dealt with as soon as they're seen.  They will emit
   // messages of their own.
+
+  /* flagfile fromenv tryfromenv 是自带的, 所以经过上面的赋值肯定是已经有值了
+    所以就可以直接使用了 */
   if (strcmp(flag->name(), "flagfile") == 0) {
     msg += ProcessFlagfileLocked(FLAGS_flagfile, set_mode);
 
@@ -1423,6 +1462,7 @@ string CommandLineFlagParser::ProcessSingleOptionLocked(
     // last arg indicates envval-not-found is fatal (unlike in --tryfromenv)
     msg += ProcessFromenvLocked(FLAGS_fromenv, set_mode, true);
 
+    /* 这俩有啥作用吗? 没 GET 到, 后面的 true/false 指出是否没找到时就直接退出 */
   } else if (strcmp(flag->name(), "tryfromenv") == 0) {
     msg += ProcessFromenvLocked(FLAGS_tryfromenv, set_mode, false);
   }
@@ -1494,39 +1534,76 @@ bool CommandLineFlagParser::ReportErrors() {
   return found_error;
 }
 
+/**
+ *     看来真的是可以将参数暂时先保存到文件中, 然后直接传入一个文件就好!!!
+ *  强强强啊
+ * 
+ *  从传入的文件中, 解析 flag
+ *    此时文件中的也有一些额外的规则, 每行只能写入四种内容:
+ *    (1) 注释 # 开头
+ *    (2) 空行
+ *    (3) 文件名  可以是全路径, 也可以仅是文件名, 
+ *        不是必须得, 在文件名之外的统统都算是当前程序的标记
+ *    (4) -/-- 开头的标记 从这就能看出来, 文件中要一行一个标记
+ * 
+ * 
+ * @param [in]  contentdata   --flagfile 传入的一个文件中的内容
+ * @param [in]  set_mode      存储模式
+ * @return     错误信息
+ */
 string CommandLineFlagParser::ProcessOptionsFromStringLocked(
     const string& contentdata, FlagSettingMode set_mode) {
   string retval;
   const char* flagfile_contents = contentdata.c_str();
   bool flags_are_relevant = true;   // set to false when filenames don't match
+                                    // 当没设置文件名字时, 默认是当前调用程序的 flag
   bool in_filename_section = false;
 
   const char* line_end = flagfile_contents;
   // We read this file a line at a time.
   for (; line_end; flagfile_contents = line_end + 1) {
+    /* 
+      isspace 检查传入的字符是否为空白, 如果字符是空白字符，返回非零值，否则返回零
+    所以下面的 while 目的就是跳过存在的空白
+     */
     while (*flagfile_contents && isspace(*flagfile_contents))
       ++flagfile_contents;
+
     // Windows uses "\r\n"
+    /* strchr 找到子串, 返回指向 str 找到的字符的指针，若未找到该字符则为空指针。 */
     line_end = strchr(flagfile_contents, '\r');
-    if (line_end == NULL)
+    if (line_end == NULL) /* 没有找到 \r 就说明是 Unix, Unix 以 '\n' 为结尾 */
         line_end = strchr(flagfile_contents, '\n');
 
+    /* 
+    到这里的时候, flagfile_contents 已经指向的是有内容的第一个字符
+    len 表示的就是一行有多长
+
+    line_end == NULL 就说明文件只有一行, 所以会没有换行!!!
+    感觉这个可以直接使用 std::getline() 很方便的实现
+     */
     size_t len = line_end ? line_end - flagfile_contents
                           : strlen(flagfile_contents);
     string line(flagfile_contents, len);
 
     // Each line can be one of four things:
-    // 1) A comment line -- we skip it
-    // 2) An empty line -- we skip it
-    // 3) A list of filenames -- starts a new filenames+flags section
-    // 4) A --flag=value line -- apply if previous filenames match
-    if (line.empty() || line[0] == '#') {
+    // 1) A comment line -- we skip it  注释跳过
+    // 2) An empty line -- we skip it   空行跳过
+    // 3) A list of filenames -- starts a new filenames+flags section 
+    // 4) A --flag=value line -- apply if previous filenames match  
+    // 果然这个文件中, 是可以写命令的!!!
+    // 并且只能一行一个一名
+    // 一行是一些文件列表.
+    if (line.empty() || line[0] == '#') { // # 作为注释
       // comment or empty line; just ignore
 
-    } else if (line[0] == '-') {    // flag
-      in_filename_section = false;  // instead, it was a flag-line
+    } else if (line[0] == '-') {    // flag 找到一个 flag 
+      in_filename_section = false;  // instead, it was a flag-line 
       if (!flags_are_relevant)      // skip this flag; applies to someone else
         continue;
+
+      /* 最开始的时候是不向关的字段, 也就是说, 要想使文件中字段有效, 必须使用
+      程序名作为开头, 并且文件名前后不能有多余的东西 */
 
       const char* name_and_val = line.c_str() + 1;    // skip the leading -
       if (*name_and_val == '-')
@@ -1534,6 +1611,8 @@ string CommandLineFlagParser::ProcessOptionsFromStringLocked(
       string key;
       const char* value;
       string error_message;
+
+      /* 这个和前面一样了, 同样能用文件写的, 还只能是在程序中定义过的 flag!!! */
       CommandLineFlag* flag = registry_->SplitArgumentLocked(name_and_val,
                                                              &key, &value,
                                                              &error_message);
@@ -1543,10 +1622,13 @@ string CommandLineFlagParser::ProcessOptionsFromStringLocked(
       } else if (value == NULL) {
         // "WARNING: flagname '" + key + "' missing a value\n"
       } else {
+        
+        /* 递归了, 标记文件中, 也是可以再传递标记文件的 */
         retval += ProcessSingleOptionLocked(flag, value, set_mode);
       }
 
-    } else {                        // a filename!
+    } else {                        // a filename!  为什么不用 - 开头就说是一个文件名??
+                                    // 就是规定的, 上面说了, 每个文件只能写四种东西
       if (!in_filename_section) {   // start over: assume filenames don't match
         in_filename_section = true;
         flags_are_relevant = false;
@@ -1558,12 +1640,15 @@ string CommandLineFlagParser::ProcessOptionsFromStringLocked(
         if (flags_are_relevant)     // we can stop as soon as we match
           break;
         space = strchr(word, ' ');
-        if (space == NULL)
+        if (space == NULL)    // 跳过空白
           space = word + strlen(word);
         const string glob(word, space - word);
+
+        /* 找打一个单词 */
         // We try matching both against the full argv0 and basename(argv0)
-        if (glob == ProgramInvocationName()       // small optimization
-            || glob == ProgramInvocationShortName()
+        // 哦哦哦 有点儿明白了, 这些好像是, 可以使用程序名对文件中标记进行分段
+        if (glob == ProgramInvocationName()       // small optimization 程序名名字
+            || glob == ProgramInvocationShortName() // 只留文件名
 #if defined(HAVE_FNMATCH_H)
             || fnmatch(glob.c_str(), ProgramInvocationName(),      FNM_PATHNAME) == 0
             || fnmatch(glob.c_str(), ProgramInvocationShortName(), FNM_PATHNAME) == 0
@@ -1792,7 +1877,7 @@ const char* ProgramInvocationName() {             // like the GNU libc fn
 }
 
 /**
- *     去除程序名中, 第一个 / 之前的内容
+ *     只留文件名
  * @return     无
  */
 const char* ProgramInvocationShortName() {        // like the GNU libc fn
@@ -2185,7 +2270,15 @@ bool RegisterFlagValidator(const string* flag,
 //    function into two parts, if you want to do work between
 //    the parsing of the flags and the printing of any help output.
 // --------------------------------------------------------------------
-
+/**
+ *     解析命令行参数
+ *
+ * @param [in]  argc    命令行参数个数
+ * @param [in]  argv    命令行参数
+ * @param [in]  remove_flags    解析完成后释放借成功解析的标记删除
+ * @param [in]  do_report       
+ * @return     无
+ */
 static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
                                             bool remove_flags, bool do_report) {
   SetArgv(*argc, const_cast<const char**>(*argv));    // save it for later
@@ -2200,6 +2293,11 @@ static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
   // manually before calling ParseCommandLineFlags.  We want to evaluate
   // those too, as if they were the first flags on the commandline.
   registry->Lock();
+
+  /* 都还没解析, 这里怎么会有值呢? 
+  ooo 是因为, 程序中可以在 ParseCommandLineFlags 之前就设置的它们的值
+  所以在这里要解析一下, 把之前设置的统统也留下!!!
+  */
   parser.ProcessFlagfileLocked(FLAGS_flagfile, SET_FLAGS_VALUE);
   // Last arg here indicates whether flag-not-found is a fatal error or not
   parser.ProcessFromenvLocked(FLAGS_fromenv, SET_FLAGS_VALUE, true);
