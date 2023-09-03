@@ -442,6 +442,11 @@ string FlagValue::ToString() const {
 reinterpret_cast 果然强大, 没有它不能转的!!! 可以可以, 可以考虑考虑
 validate_fn_proto 应该是用户传过来的, 后面再看看
 验证传入的值是不是符合用户的要求
+
+传过来的函数指针是带参数的, 存储的时候是不带参数的, 我什么要这么搞???
+这样就可以将所有不同类型的校验器存到一起!!! 不需要为不同类型的校验器存储不同的类型
+wocao!!! 强啊, 函数指针说到底就还是一个指针!!!
+六六六啊, 学习到了
 */
 bool FlagValue::Validate(const char* flagname,
                          ValidateFnProto validate_fn_proto) const {
@@ -1470,15 +1475,18 @@ string CommandLineFlagParser::ProcessSingleOptionLocked(
   return msg;
 }
 
+/*  */
 void CommandLineFlagParser::ValidateFlags(bool all) {
   FlagRegistryLock frl(registry_);
   for (FlagRegistry::FlagConstIterator i = registry_->flags_.begin();
        i != registry_->flags_.end(); ++i) {
+    /* 这里会调用用户传入的检查函数 */
     if ((all || !i->second->Modified()) && !i->second->ValidateCurrent()) {
       // only set a message if one isn't already there.  (If there's
       // an error message, our job is done, even if it's not exactly
       // the same error.)
-      if (error_flags_[i->second->name()].empty()) {
+      /* 为什么空了还要专门处理??? 因为能进到这里来, ValidateCurrent 就已经失败了! */
+      if (error_flags_[i->second->name()].empty()) {  
         error_flags_[i->second->name()] =
             string(kError) + "--" + i->second->name() +
             " must be set on the commandline";
@@ -1687,11 +1695,20 @@ T GetFromEnv(const char *varname, T dflt) {
   } else return dflt;
 }
 
+/**
+ *     添加一个标记检查器
+ *  这个方法是  CommandLineFlag  的友元!!! 所以是可以直接通过成员添加的!!!
+ * 
+ * @param [in]  flag_ptr            定义的 flag 指针
+ * @param [in]  validate_fn_proto   检查函数
+ * @return     无
+ */
 bool AddFlagValidator(const void* flag_ptr, ValidateFnProto validate_fn_proto) {
   // We want a lock around this routine, in case two threads try to
   // add a validator (hopefully the same one!) at once.  We could use
   // our own thread, but we need to loook at the registry anyway, so
   // we just steal that one.
+  /* 上面的意思应该是说用了注册表的锁来保证线程安全 */
   FlagRegistry* const registry = FlagRegistry::GlobalRegistry();
   FlagRegistryLock frl(registry);
   // First, find the flag whose current-flag storage is 'flag'.
@@ -1790,7 +1807,7 @@ INSTANTIATE_FLAG_REGISTERER_CTOR(std::string);
 //    the main registry, sorted first by filename they are defined
 //    in, and then by flagname.
 // --------------------------------------------------------------------
-
+/* 先依据文件名排序, 再依据标记名排序 */
 struct FilenameFlagnameCmp {
   bool operator()(const CommandLineFlagInfo& a,
                   const CommandLineFlagInfo& b) const {
@@ -1801,13 +1818,20 @@ struct FilenameFlagnameCmp {
   }
 };
 
+/**
+ *     获取在注册表 FlagRegistry 中注册的所有标记
+ * 
+ * GetAllFlags 是  FlagRegistry 类的友元, 所以可以直接访问私有成员
+ * 
+ * @param [out] OUTPUT      输出位置
+ */
 void GetAllFlags(vector<CommandLineFlagInfo>* OUTPUT) {
   FlagRegistry* const registry = FlagRegistry::GlobalRegistry();
   registry->Lock();
   for (FlagRegistry::FlagConstIterator i = registry->flags_.begin();
        i != registry->flags_.end(); ++i) {
     CommandLineFlagInfo fi;
-    i->second->FillCommandLineFlagInfo(&fi);
+    i->second->FillCommandLineFlagInfo(&fi);      /* 深拷贝一份 */
     OUTPUT->push_back(fi);
   }
   registry->Unlock();
@@ -1894,6 +1918,11 @@ void SetUsageMessage(const string& usage) {
   program_usage = usage;
 }
 
+/**
+ *     获取显示用户设置的使用信息
+ * 
+ * @return     使用信息
+ */
 const char* ProgramUsage() {
   if (program_usage.empty()) {
     return "Warning: SetUsageMessage() never called";
@@ -2232,6 +2261,8 @@ const char *StringFromEnv(const char *varname, const char *dflt) {
 
 bool RegisterFlagValidator(const bool* flag,
                            bool (*validate_fn)(const char*, bool)) {
+  /* reinterpret_cast 各种类型都能搞, 能把待参数的函数指针转成不带参数的!
+  nb 啊 */
   return AddFlagValidator(flag, reinterpret_cast<ValidateFnProto>(validate_fn));
 }
 bool RegisterFlagValidator(const int32* flag,
@@ -2271,12 +2302,12 @@ bool RegisterFlagValidator(const string* flag,
 //    the parsing of the flags and the printing of any help output.
 // --------------------------------------------------------------------
 /**
- *     解析命令行参数
+ *     解析命令行参数, 并调用校验信息
  *
  * @param [in]  argc    命令行参数个数
  * @param [in]  argv    命令行参数
  * @param [in]  remove_flags    解析完成后释放借成功解析的标记删除
- * @param [in]  do_report       
+ * @param [in]  do_report       是否开启 helpxxx 系列标记
  * @return     无
  */
 static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
@@ -2307,12 +2338,21 @@ static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
   // Now get the flags specified on the commandline
   const int r = parser.ParseNewCommandLineFlags(argc, argv, remove_flags);
 
-  if (do_report)
+  std::cout << "来到这里\n";
+
+  std::cout << do_report << std::endl;
+  if (do_report) {
+    std::cout << "do_report\n";
+
+    /* 提供 helpxxx 系列执行处理 */
     HandleCommandLineHelpFlags();   // may cause us to exit on --help, etc.
+  }
 
   // See if any of the unset flags fail their validation checks
+  // 调用用户定义的检查函数
   parser.ValidateUnmodifiedFlags();
 
+  /* 打印错误信息就不看了 */
   if (parser.ReportErrors())        // may cause us to exit on illegal flags
     gflags_exitfunc(1);
   return r;
@@ -2327,6 +2367,7 @@ static uint32 ParseCommandLineFlagsInternal(int* argc, char*** argv,
  * @return     暂不清楚
  */
 uint32 ParseCommandLineFlags(int* argc, char*** argv, bool remove_flags) {
+  std::cout << "sododsodododsoodsods\n";
   return ParseCommandLineFlagsInternal(argc, argv, remove_flags, true);
 }
 

@@ -89,6 +89,19 @@ using namespace gflags;
 
 // }
 
+DEFINE_int32(yeah, true, "测试 helpshort");
+
+static bool ValidatePort(const char* flagname, int32 value) 
+{
+    std::cout << "OK 来到这里了, flagname: " << flagname << std::endl;
+    if (value > 0 && value < 32768)   // value is ok
+    return true;
+    printf("Invalid value for --%s: %d\n", flagname, (int)value);
+    return false;
+}
+DEFINE_int32(port, 0, "What port to listen on");
+static bool dummy = RegisterFlagValidator(&FLAGS_yeah, &ValidatePort);
+
 TEST(learing, testGflagsFile)
 {
     INFO("device_id: {}", FLAGS_device_id);
@@ -101,22 +114,24 @@ TEST(learing, testGflagsFile)
 int main(int argc, char* argv[])
 {   
     SetVersionString("v1.1");   /* 要在解析之前用 */
-
-    std::cout << "原始\n";
-    std::cout << "argc: " << argc << std::endl;
-    for (int i = 0; i < argc; i++) {
-        std::cout << argv[i] << " ";
-    }
-    std::cout << std::endl;
+    SetUsageMessage("hahahahahahaha");
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
     
-    std::cout << gflags::ParseCommandLineFlags(&argc, &argv, false) << std::endl; 
+    // std::cout << "原始\n";
+    // std::cout << "argc: " << argc << std::endl;
+    // for (int i = 0; i < argc; i++) {
+    //     std::cout << argv[i] << " ";
+    // }
+    // std::cout << std::endl;
+    
+    // std::cout << gflags::ParseCommandLineFlags(&argc, &argv, false) << std::endl; 
 
-    std::cout << "之后\n";
-    std::cout << "argc: " << argc << std::endl;
-    for (int i = 0; i < argc; i++) {
-        std::cout << argv[i] << " ";
-    }
-    std::cout << std::endl;
+    // std::cout << "之后\n";
+    // std::cout << "argc: " << argc << std::endl;
+    // for (int i = 0; i < argc; i++) {
+    //     std::cout << argv[i] << " ";
+    // }
+    // std::cout << std::endl;
 
     testing::AddGlobalTestEnvironment(new MyEnvironment);
     testing::InitGoogleTest(&argc, argv);

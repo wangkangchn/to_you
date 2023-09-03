@@ -1,15 +1,10 @@
+#include <string>
+#include <iostream>
 
-
-struct AAA
-{
-    template <typename T>
-    AAA(T a) {}
-};
-
-#define TYPE()  \
-    1 ? AAA(int()) : AAA(float())
 
 int main()
 {
-    auto a = TYPE();
+    std::string str{"sdfAfds"};
+    std::cout << str.find("AFD") << std::endl;
+    return 0;
 }

@@ -101,9 +101,10 @@ template <> struct CompileAssert<true> {};
 
 // For now, we ignore the level for logging, and don't show *VLOG's at
 // all, except by hand-editing the lines below
-#define LOG(level)    std::cerr
-#define VLOG(level)   if (true) {} else std::cerr
-#define DVLOG(level)  if (true) {} else std::cerr
+#define OPEN_DEBUG    true
+#define LOG(level)    std::cout
+#define VLOG(level)   if (!OPEN_DEBUG) {} else std::cout
+#define DVLOG(level)  if (!OPEN_DEBUG) {} else std::cout
 
 // CHECK dies with a fatal error if condition is not true.  It is *not*
 // controlled by NDEBUG, so the check will be executed regardless of

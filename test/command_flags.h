@@ -15,6 +15,7 @@
 /* 设备相关 */
 DEFINE_int32(device_id, 1, "设备 id");
 DEFINE_int32(num_threads, 2, "线程数");
+DEFINE_int32(num_test, 2, "测试");
 DEFINE_int32(batch, 1, "batch 数");
 
 /* 日志相关 */

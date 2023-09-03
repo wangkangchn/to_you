@@ -1,7 +1,7 @@
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 find_package(GTest REQUIRED)
-find_package(gflags  REQUIRED)
+# find_package(gflags  REQUIRED)
 
 set(zip_DIR "/home/wkangk/to_you/thirdparty/zip/lib/cmake/zip")
 find_package(zip)     # 搜索第三方库
@@ -11,15 +11,18 @@ include_directories(    ${CMAKE_CURRENT_SOURCE_DIR}
                         "${THIRDPARTY_DIR}/zip/include"
                         "${THIRDPARTY_DIR}/sqlite3/include"
                         "${THIRDPARTY_DIR}/nlohmann/include"
+                        "${PROJECT_SOURCE_DIR}/3rdparty_learning/gflags/build/install/include"
                 )
 
 link_directories(       "${THIRDPARTY_DIR}/zip/lib"
                         "${THIRDPARTY_DIR}/sqlite3/lib"
+                        "${PROJECT_SOURCE_DIR}/3rdparty_learning/gflags/build/install/lib"
 )
 
 set(Thirdparty_Libs     pthread
                         GTest::GTest GTest::Main
-                        gflags gmock
+                         gmock
+                        "/home/wkangk/to_you/3rdparty_learning/gflags/build/install/lib/libgflags.so"
                         zip
                         sqlite3
                     )
